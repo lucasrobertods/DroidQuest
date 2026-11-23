@@ -16,6 +16,23 @@ val DROIDQUEST_MIGRATION_1_2: Migration = object : Migration(1, 2) {
     }
 }
 
+val DROIDQUEST_MIGRATION_2_3: Migration = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "ALTER TABLE mission_config ADD COLUMN studyReminderEnabled INTEGER NOT NULL DEFAULT 0"
+        )
+        connection.execSQL(
+            "ALTER TABLE mission_config ADD COLUMN studyReminderDays TEXT NOT NULL DEFAULT '1,2,3,4,5'"
+        )
+        connection.execSQL(
+            "ALTER TABLE mission_config ADD COLUMN studyReminderHour INTEGER NOT NULL DEFAULT 19"
+        )
+        connection.execSQL(
+            "ALTER TABLE mission_config ADD COLUMN studyReminderMinute INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
+
 @Database(
     entities = [
         MissionConfigEntity::class,
@@ -24,7 +41,7 @@ val DROIDQUEST_MIGRATION_1_2: Migration = object : Migration(1, 2) {
         CustomLinkEntity::class,
         StudyLogEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 @ConstructedBy(DroidQuestDatabaseConstructor::class)

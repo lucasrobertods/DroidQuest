@@ -37,7 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import com.lrds.androidroadapp.designsystem.components.PrimaryActionButton
 import com.lrds.androidroadapp.designsystem.components.SecondaryTonalButton
@@ -45,10 +48,25 @@ import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
 import com.lrds.androidroadapp.domain.model.SaveStatus
+import com.lrds.androidroadapp.domain.model.StudySchedule
 import com.lrds.androidroadapp.domain.model.ThemeMode
+import com.lrds.androidroadapp.presentation.StableSet
 import com.lrds.androidroadapp.presentation.quest.questTextFieldColors
+import com.lrds.androidroadapp.presentation.toStableSet
 
 private val REMINDER_HOUR_PRESETS = listOf(9, 13, 19, 21)
+private val STUDY_TIME_PRESETS = listOf(8 to 0, 12 to 30, 19 to 0, 21 to 0)
+
+private const val ACTIVE_CARD_BORDER_ALPHA = 0.35f
+private const val SELECTED_CHIP_BORDER_ALPHA = 0.55f
+private const val SELECTED_THEME_BORDER_ALPHA = 0.65f
+private const val ERROR_BORDER_ALPHA = 0.5f
+
+private const val HOURS_PER_DAY = 24
+private const val PREV_HOUR_OFFSET = 23
+private const val MINUTES_PER_HOUR = 60
+private const val MINUTE_STEP = 5
+private const val PREV_MINUTE_OFFSET = 55
 
 @Composable
 fun SettingsDialog(
@@ -58,12 +76,17 @@ fun SettingsDialog(
     storageLabel: String,
     dailyReminderEnabled: Boolean,
     reminderHour: Int,
+    studyReminderEnabled: Boolean,
+    studyReminderDays: StableSet<Int>,
+    studyReminderHour: Int,
+    studyReminderMinute: Int,
     supportsDailyReminders: Boolean,
     supportsNativeFilePicker: Boolean,
     onClose: () -> Unit,
     onSetThemeMode: (ThemeMode) -> Unit,
     onUpdateStartDate: (String) -> Unit,
     onSetDailyReminder: (Boolean, Int) -> Unit,
+    onSetStudySchedule: (Boolean, Set<Int>, Int, Int) -> Unit,
     onExportJson: () -> Unit,
     onPickJsonFile: () -> Unit,
     onImportJsonRaw: (String) -> Unit,
@@ -96,6 +119,7 @@ fun SettingsDialog(
         ) {
             Column {
                 SettingsDialogHeader(onClose = onClose)
+
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                 Column(
@@ -115,18 +139,23 @@ fun SettingsDialog(
                         onUpdateStartDate = onUpdateStartDate,
                     )
 
+                    if (supportsDailyReminders) {
+                        NotificationsSection(
+                            studyReminderEnabled = studyReminderEnabled,
+                            studyReminderDays = studyReminderDays,
+                            studyReminderHour = studyReminderHour,
+                            studyReminderMinute = studyReminderMinute,
+                            dailyReminderEnabled = dailyReminderEnabled,
+                            reminderHour = reminderHour,
+                            onSetStudySchedule = onSetStudySchedule,
+                            onSetDailyReminder = onSetDailyReminder,
+                        )
+                    }
+
                     LocalPersistenceCard(
                         storageLabel = storageLabel,
                         saveStatus = saveStatus,
                     )
-
-                    if (supportsDailyReminders) {
-                        DailyReminderCard(
-                            dailyReminderEnabled = dailyReminderEnabled,
-                            reminderHour = reminderHour,
-                            onSetDailyReminder = onSetDailyReminder,
-                        )
-                    }
 
                     BackupRestoreSection(
                         supportsNativeFilePicker = supportsNativeFilePicker,
@@ -160,11 +189,20 @@ private fun SettingsDialogHeader(onClose: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "Settings & Backup",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.base),
+        ) {
+            SettingsIconBadge(
+                icon = DroidQuestIcons.Settings,
+                active = true,
+            )
+            Text(
+                text = "Settings & Backup",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = CircleShape,
@@ -217,7 +255,7 @@ private fun AppearanceSection(
                     MaterialTheme.colorScheme.surfaceContainer
                 }
                 val borderColor = if (selected) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
+                    MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_THEME_BORDER_ALPHA)
                 } else {
                     MaterialTheme.colorScheme.outlineVariant
                 }
@@ -293,6 +331,451 @@ private fun SprintStartDateSection(
 }
 
 @Composable
+private fun NotificationsSection(
+    studyReminderEnabled: Boolean,
+    studyReminderDays: StableSet<Int>,
+    studyReminderHour: Int,
+    studyReminderMinute: Int,
+    dailyReminderEnabled: Boolean,
+    reminderHour: Int,
+    onSetStudySchedule: (Boolean, Set<Int>, Int, Int) -> Unit,
+    onSetDailyReminder: (Boolean, Int) -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val anyActive = studyReminderEnabled || dailyReminderEnabled
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.base)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "NOTIFICATIONS",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (anyActive) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(sizing.progressBarStandard)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                    )
+                    Text(
+                        text = "ACTIVE",
+                        style = DroidQuestTheme.mono.micro,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+
+        StudyScheduleCard(
+            enabled = studyReminderEnabled,
+            daysOfWeek = studyReminderDays,
+            hour = studyReminderHour,
+            minute = studyReminderMinute,
+            onUpdate = onSetStudySchedule,
+        )
+
+        DailyReminderCard(
+            dailyReminderEnabled = dailyReminderEnabled,
+            reminderHour = reminderHour,
+            onSetDailyReminder = onSetDailyReminder,
+        )
+    }
+}
+
+@Composable
+private fun StudyScheduleCard(
+    enabled: Boolean,
+    daysOfWeek: StableSet<Int>,
+    hour: Int,
+    minute: Int,
+    onUpdate: (enabled: Boolean, daysOfWeek: Set<Int>, hour: Int, minute: Int) -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
+    val normalizedDays = remember(daysOfWeek) { StudySchedule.normalizeDays(daysOfWeek).toStableSet() }
+    val borderColor = if (enabled) {
+        MaterialTheme.colorScheme.primary.copy(alpha = ACTIVE_CARD_BORDER_ALPHA)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = DroidQuestCornerShapes.QuestCard,
+        border = BorderStroke(borders.hairline, borderColor),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(spacing.cardPaddingCompact),
+            verticalArrangement = Arrangement.spacedBy(spacing.lg),
+        ) {
+            StudyScheduleHeaderRow(
+                enabled = enabled,
+                normalizedDays = normalizedDays,
+                hour = hour,
+                minute = minute,
+                onToggle = { checked -> onUpdate(checked, normalizedDays, hour, minute) },
+            )
+
+            StudyScheduleWeekdaysSection(
+                enabled = enabled,
+                normalizedDays = normalizedDays,
+                onToggleDay = { isoDay ->
+                    val nextDays = if (isoDay in normalizedDays) {
+                        normalizedDays - isoDay
+                    } else {
+                        normalizedDays + isoDay
+                    }
+                    onUpdate(enabled, nextDays, hour, minute)
+                },
+            )
+
+            StudyScheduleTimeBar(
+                hour = hour,
+                minute = minute,
+                onHourChange = { nextHour -> onUpdate(enabled, normalizedDays, nextHour, minute) },
+                onMinuteChange = { nextMinute -> onUpdate(enabled, normalizedDays, hour, nextMinute) },
+            )
+
+            StudySchedulePresetsRow(
+                hour = hour,
+                minute = minute,
+                onSelectPreset = { presetHour, presetMinute ->
+                    onUpdate(enabled, normalizedDays, presetHour, presetMinute)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun StudyScheduleHeaderRow(
+    enabled: Boolean,
+    normalizedDays: StableSet<Int>,
+    hour: Int,
+    minute: Int,
+    onToggle: (Boolean) -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val formattedTime = StudySchedule.formatTime(hour, minute)
+    val subtitle = when {
+        normalizedDays.isEmpty() -> "Choose weekdays and study time"
+        enabled -> "${StudySchedule.formatDaysSummary(normalizedDays)} at $formattedTime · Opens Next Quest"
+        else -> "Paused · ${StudySchedule.formatDaysSummary(normalizedDays)} at $formattedTime"
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.base),
+        ) {
+            SettingsIconBadge(
+                icon = DroidQuestIcons.CalendarClock,
+                active = enabled,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                Text(
+                    text = "Study Schedule",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        SettingsToggleSwitch(checked = enabled, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun StudyScheduleWeekdaysSection(
+    enabled: Boolean,
+    normalizedDays: StableSet<Int>,
+    onToggleDay: (Int) -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+    val dayWord = if (normalizedDays.size == 1) "DAY" else "DAYS"
+    val daysPerWeekLabel = "${normalizedDays.size} $dayWord / WK"
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "TARGET DAYS",
+                style = DroidQuestTheme.mono.micro,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = daysPerWeekLabel,
+                style = DroidQuestTheme.mono.micro,
+                color = if (enabled && normalizedDays.isNotEmpty()) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+        ) {
+            StudySchedule.ALL_ISO_DAYS.forEach { isoDay ->
+                val selected = isoDay in normalizedDays
+                val fillColor = when {
+                    selected && enabled -> MaterialTheme.colorScheme.primary
+                    selected -> MaterialTheme.colorScheme.primaryContainer
+                    else -> MaterialTheme.colorScheme.surfaceContainerLowest
+                }
+                val borderColor = when {
+                    selected && enabled -> MaterialTheme.colorScheme.primary
+                    selected -> MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_CHIP_BORDER_ALPHA)
+                    else -> MaterialTheme.colorScheme.outlineVariant
+                }
+                val textColor = when {
+                    selected && enabled -> MaterialTheme.colorScheme.onPrimary
+                    selected -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+
+                Surface(
+                    color = fillColor,
+                    shape = DroidQuestCornerShapes.MicroBadge,
+                    border = BorderStroke(borders.hairline, borderColor),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(sizing.ghostButtonSize)
+                        .clip(DroidQuestCornerShapes.MicroBadge)
+                        .semantics {
+                            contentDescription = "${StudySchedule.dayShortName(isoDay)} study reminder"
+                        }
+                        .clickable { onToggleDay(isoDay) },
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = StudySchedule.dayInitial(isoDay),
+                            style = DroidQuestTheme.mono.badge,
+                            color = textColor,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StudyScheduleTimeBar(
+    hour: Int,
+    minute: Int,
+    onHourChange: (Int) -> Unit,
+    onMinuteChange: (Int) -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        shape = DroidQuestCornerShapes.TactileButton,
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = spacing.lg, vertical = spacing.md),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                Icon(
+                    imageVector = DroidQuestIcons.Clock,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(sizing.iconSm),
+                )
+                Text(
+                    text = "Study time",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                TimeStepperGroup(
+                    valueText = StudySchedule.clampHour(hour).toString().padStart(2, '0'),
+                    decreaseDescription = "Decrease study hour",
+                    increaseDescription = "Increase study hour",
+                    onDecrease = { onHourChange((hour + PREV_HOUR_OFFSET) % HOURS_PER_DAY) },
+                    onIncrease = { onHourChange((hour + 1) % HOURS_PER_DAY) },
+                )
+                Text(
+                    text = ":",
+                    style = DroidQuestTheme.mono.metric,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TimeStepperGroup(
+                    valueText = StudySchedule.clampMinute(minute).toString().padStart(2, '0'),
+                    decreaseDescription = "Decrease study minute",
+                    increaseDescription = "Increase study minute",
+                    onDecrease = { onMinuteChange((minute + PREV_MINUTE_OFFSET) % MINUTES_PER_HOUR) },
+                    onIncrease = { onMinuteChange((minute + MINUTE_STEP) % MINUTES_PER_HOUR) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StudySchedulePresetsRow(
+    hour: Int,
+    minute: Int,
+    onSelectPreset: (Int, Int) -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Presets:",
+            style = DroidQuestTheme.mono.micro,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        STUDY_TIME_PRESETS.forEach { (presetHour, presetMinute) ->
+            val selected = hour == presetHour && minute == presetMinute
+            val fillColor = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLowest
+            }
+            val borderColor = if (selected) {
+                MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_CHIP_BORDER_ALPHA)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            }
+            val textColor = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            Surface(
+                color = fillColor,
+                shape = DroidQuestCornerShapes.MicroBadge,
+                border = BorderStroke(borders.hairline, borderColor),
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(DroidQuestCornerShapes.MicroBadge)
+                    .clickable { onSelectPreset(presetHour, presetMinute) },
+            ) {
+                Box(
+                    modifier = Modifier.padding(vertical = spacing.sm),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = StudySchedule.formatTime(presetHour, presetMinute),
+                        style = DroidQuestTheme.mono.micro,
+                        color = textColor,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeStepperGroup(
+    valueText: String,
+    decreaseDescription: String,
+    increaseDescription: String,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = DroidQuestCornerShapes.MicroBadge,
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = spacing.xs, vertical = spacing.xxs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(sizing.checkCircleSize)
+                    .clip(DroidQuestCornerShapes.MicroBadge)
+                    .semantics { contentDescription = decreaseDescription }
+                    .clickable(onClick = onDecrease),
+            ) {
+                Text(
+                    text = "−",
+                    style = DroidQuestTheme.mono.metric,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = valueText,
+                style = DroidQuestTheme.mono.metric,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(sizing.checkCircleSize)
+                    .clip(DroidQuestCornerShapes.MicroBadge)
+                    .semantics { contentDescription = increaseDescription }
+                    .clickable(onClick = onIncrease),
+            ) {
+                Text(
+                    text = "+",
+                    style = DroidQuestTheme.mono.metric,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun LocalPersistenceCard(
     storageLabel: String,
     saveStatus: SaveStatus,
@@ -306,31 +789,41 @@ private fun LocalPersistenceCard(
         shape = DroidQuestCornerShapes.QuestCard,
         border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(
+        Row(
             modifier = Modifier.fillMaxWidth().padding(spacing.cardPaddingCompact),
-            verticalArrangement = Arrangement.spacedBy(spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.base),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(spacing.md),
+            SettingsIconBadge(
+                icon = DroidQuestIcons.HardDrive,
+                active = true,
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(spacing.xxs),
             ) {
-                Icon(
-                    imageVector = DroidQuestIcons.HardDrive,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(sizing.iconMd),
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                ) {
+                    Text(
+                        text = storageLabel,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(sizing.progressBarStandard)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                    )
+                }
                 Text(
-                    text = "$storageLabel · ${saveStatus.name.lowercase().replace('_', ' ')}",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = "${saveStatus.name.lowercase().replace('_', ' ')} · progress.json compatible",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = "Offline-first storage compatible with DroidQuest Web progress.json backups.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -351,39 +844,43 @@ private fun DailyReminderCard(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(spacing.cardPaddingCompact),
-            verticalArrangement = Arrangement.spacedBy(spacing.base),
+            verticalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Daily Review Reminder",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.base),
+                ) {
+                    SettingsIconBadge(
+                        icon = DroidQuestIcons.Bell,
+                        active = dailyReminderEnabled,
                     )
-                    Text(
-                        text = "Local notification at ${reminderHour.toString().padStart(2, '0')}:00",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                        Text(
+                            text = "Daily Review Reminder",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "Spaced repetition alert at ${reminderHour.toString().padStart(2, '0')}:00",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                Switch(
+                SettingsToggleSwitch(
                     checked = dailyReminderEnabled,
                     onCheckedChange = { checked -> onSetDailyReminder(checked, reminderHour) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary,
-                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                    ),
                 )
             }
 
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -392,6 +889,7 @@ private fun DailyReminderCard(
                         hour = hour,
                         selected = reminderHour == hour,
                         onClick = { onSetDailyReminder(true, hour) },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -404,16 +902,17 @@ private fun ReminderHourChip(
     hour: Int,
     selected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = DroidQuestTheme.spacing
     val borders = DroidQuestTheme.borders
     val bgColor = if (selected) {
-        MaterialTheme.colorScheme.surfaceContainerHigh
+        MaterialTheme.colorScheme.primaryContainer
     } else {
         MaterialTheme.colorScheme.surfaceContainerLowest
     }
     val borderColor = if (selected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+        MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_CHIP_BORDER_ALPHA)
     } else {
         MaterialTheme.colorScheme.outlineVariant
     }
@@ -423,17 +922,79 @@ private fun ReminderHourChip(
         color = bgColor,
         shape = DroidQuestCornerShapes.MicroBadge,
         border = BorderStroke(borders.hairline, borderColor),
-        modifier = Modifier
+        modifier = modifier
             .clip(DroidQuestCornerShapes.MicroBadge)
             .clickable(onClick = onClick),
     ) {
-        Text(
-            text = "${hour.toString().padStart(2, '0')}:00",
-            style = DroidQuestTheme.mono.micro,
-            color = textColor,
-            modifier = Modifier.padding(horizontal = spacing.base, vertical = spacing.sm),
-        )
+        Box(
+            modifier = Modifier.padding(vertical = spacing.sm),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "${hour.toString().padStart(2, '0')}:00",
+                style = DroidQuestTheme.mono.micro,
+                color = textColor,
+            )
+        }
     }
+}
+
+@Composable
+private fun SettingsIconBadge(
+    icon: ImageVector,
+    active: Boolean,
+) {
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+    val fillColor = if (active) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val borderColor = if (active) {
+        MaterialTheme.colorScheme.primary.copy(alpha = ACTIVE_CARD_BORDER_ALPHA)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+    val tintColor = if (active) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Surface(
+        color = fillColor,
+        shape = DroidQuestCornerShapes.MicroBadge,
+        border = BorderStroke(borders.hairline, borderColor),
+        modifier = Modifier.size(sizing.appBadgeSize),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tintColor,
+                modifier = Modifier.size(sizing.iconMd),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsToggleSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        colors = SwitchDefaults.colors(
+            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+            checkedTrackColor = MaterialTheme.colorScheme.primary,
+            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+        ),
+    )
 }
 
 @Composable
@@ -585,7 +1146,7 @@ private fun DangerZoneConfirmCard(
     Surface(
         color = MaterialTheme.colorScheme.errorContainer,
         shape = DroidQuestCornerShapes.QuestCard,
-        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.error.copy(alpha = ERROR_BORDER_ALPHA)),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(spacing.lg),

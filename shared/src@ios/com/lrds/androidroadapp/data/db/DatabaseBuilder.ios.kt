@@ -25,7 +25,7 @@ actual fun createDroidQuestDatabase(): DroidQuestDatabase {
         name = dbPath,
     )
         .setDriver(BundledSQLiteDriver())
-        .addMigrations(DROIDQUEST_MIGRATION_1_2)
+        .addMigrations(DROIDQUEST_MIGRATION_1_2, DROIDQUEST_MIGRATION_2_3)
         .setQueryCoroutineContext(Dispatchers.IO)
         .build()
 }

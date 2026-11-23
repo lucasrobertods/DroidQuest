@@ -1,5 +1,8 @@
 package com.lrds.androidroadapp.platform
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlin.js.ExperimentalWasmJsInterop
 
 @OptIn(ExperimentalWasmJsInterop::class)
@@ -67,6 +70,9 @@ private fun jsPickJsonFile(onLoaded: (String) -> Unit) {
 private class WasmPlatformBridge : PlatformBridge {
     override val supportsDailyReminders: Boolean = false
     override val supportsNativeFilePicker: Boolean = true
+    override val pendingDeepLink: StateFlow<DeepLinkTarget?> = MutableStateFlow<DeepLinkTarget?>(null).asStateFlow()
+
+    override fun consumePendingDeepLink() = Unit
 
     override fun openUrl(url: String) {
         runCatching { jsOpenUrl(url) }
@@ -97,6 +103,18 @@ private class WasmPlatformBridge : PlatformBridge {
         enabled: Boolean,
         hour: Int,
         dueCount: Int,
+        onResult: (granted: Boolean, message: String) -> Unit,
+    ) {
+        onResult(false, "Local push reminders are available on Android & iOS.")
+    }
+
+    override fun syncStudySessionReminder(
+        enabled: Boolean,
+        daysOfWeek: Set<Int>,
+        hour: Int,
+        minute: Int,
+        nextQuestId: String?,
+        nextQuestTitle: String?,
         onResult: (granted: Boolean, message: String) -> Unit,
     ) {
         onResult(false, "Local push reminders are available on Android & iOS.")

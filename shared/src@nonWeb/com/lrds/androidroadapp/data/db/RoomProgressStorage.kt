@@ -5,6 +5,7 @@ import com.lrds.androidroadapp.domain.model.CustomLink
 import com.lrds.androidroadapp.domain.model.ResourceType
 import com.lrds.androidroadapp.domain.model.SaveStatus
 import com.lrds.androidroadapp.domain.model.StudyLogEntry
+import com.lrds.androidroadapp.domain.model.StudySchedule
 import com.lrds.androidroadapp.domain.model.ThemeMode
 import com.lrds.androidroadapp.domain.model.TopicProgress
 import com.lrds.androidroadapp.domain.model.UserProgressState
@@ -57,6 +58,7 @@ class RoomProgressStorage(
             )
         }
 
+        val studyDays = StudySchedule.decodeDaysCsv(config.studyReminderDays)
         return UserProgressState(
             version = config.version,
             startDate = config.startDate,
@@ -64,7 +66,11 @@ class RoomProgressStorage(
             soundEnabled = config.soundEnabled,
             themeMode = runCatching { ThemeMode.valueOf(config.themeMode) }.getOrDefault(ThemeMode.SYSTEM),
             dailyReminderEnabled = config.dailyReminderEnabled,
-            reminderHour = config.reminderHour,
+            reminderHour = StudySchedule.clampHour(config.reminderHour),
+            studyReminderEnabled = config.studyReminderEnabled && studyDays.isNotEmpty(),
+            studyReminderDays = studyDays,
+            studyReminderHour = StudySchedule.clampHour(config.studyReminderHour),
+            studyReminderMinute = StudySchedule.clampMinute(config.studyReminderMinute),
             topics = topics,
             questNotes = notes,
             customLinks = links,
@@ -74,6 +80,7 @@ class RoomProgressStorage(
     }
 
     override suspend fun save(state: UserProgressState) {
+        val normalizedStudyDays = StudySchedule.normalizeDays(state.studyReminderDays)
         val config = MissionConfigEntity(
             id = 1,
             version = state.version,
@@ -82,7 +89,11 @@ class RoomProgressStorage(
             soundEnabled = state.soundEnabled,
             themeMode = state.themeMode.name,
             dailyReminderEnabled = state.dailyReminderEnabled,
-            reminderHour = state.reminderHour,
+            reminderHour = StudySchedule.clampHour(state.reminderHour),
+            studyReminderEnabled = state.studyReminderEnabled && normalizedStudyDays.isNotEmpty(),
+            studyReminderDays = StudySchedule.encodeDaysCsv(normalizedStudyDays),
+            studyReminderHour = StudySchedule.clampHour(state.studyReminderHour),
+            studyReminderMinute = StudySchedule.clampMinute(state.studyReminderMinute),
             lastUpdated = state.lastUpdated,
         )
         val topics = state.topics.map { (id, progress) ->

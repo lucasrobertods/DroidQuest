@@ -2,6 +2,7 @@ package com.lrds.androidroadapp
 
 import com.lrds.androidroadapp.data.ProgressJsonCodec
 import com.lrds.androidroadapp.domain.model.ResourceType
+import com.lrds.androidroadapp.domain.model.StudySchedule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -61,9 +62,46 @@ class ProgressSerializationTest {
         assertEquals(2, decoded.topics["sd-course-1-intro"]?.reviewCount)
         assertEquals("Ready to review framework.", decoded.questNotes["q29-sd-foundations"])
         assertEquals(ResourceType.YOUTUBE, decoded.customLinks["q1-android-fundamentals"]?.first()?.type)
+        // Legacy progress.json without studyReminder* fields decodes with safe defaults
+        assertFalse(decoded.studyReminderEnabled)
+        assertEquals(StudySchedule.DEFAULT_DAYS, decoded.studyReminderDays)
+        assertEquals(StudySchedule.DEFAULT_HOUR, decoded.studyReminderHour)
+        assertEquals(StudySchedule.DEFAULT_MINUTE, decoded.studyReminderMinute)
 
         val reEncoded = ProgressJsonCodec.encode(decoded)
         val roundTripped = ProgressJsonCodec.decode(reEncoded).getOrThrow()
+        assertEquals(decoded, roundTripped)
+    }
+
+    @Test
+    fun `round-trips study schedule settings in progress json and sanitizes invalid bounds`() {
+        val jsonWithSchedule = """
+            {
+              "version": 1,
+              "startDate": "2026-11-21",
+              "targetDays": 100,
+              "soundEnabled": true,
+              "dailyReminderEnabled": true,
+              "reminderHour": 20,
+              "studyReminderEnabled": true,
+              "studyReminderDays": [5, 1, 3, 7, 99],
+              "studyReminderHour": 7,
+              "studyReminderMinute": 45,
+              "topics": {},
+              "lastUpdated": "2026-11-21T11:59:46.440Z"
+            }
+        """.trimIndent()
+
+        val decoded = ProgressJsonCodec.decode(jsonWithSchedule).getOrThrow()
+        assertTrue(decoded.dailyReminderEnabled)
+        assertEquals(20, decoded.reminderHour)
+        assertTrue(decoded.studyReminderEnabled)
+        assertEquals(setOf(1, 3, 5, 7), decoded.studyReminderDays)
+        assertEquals(7, decoded.studyReminderHour)
+        assertEquals(45, decoded.studyReminderMinute)
+
+        val encoded = ProgressJsonCodec.encode(decoded)
+        val roundTripped = ProgressJsonCodec.decode(encoded).getOrThrow()
         assertEquals(decoded, roundTripped)
     }
 

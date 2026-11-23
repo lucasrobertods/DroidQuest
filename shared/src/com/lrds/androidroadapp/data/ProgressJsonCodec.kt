@@ -1,5 +1,6 @@
 package com.lrds.androidroadapp.data
 
+import com.lrds.androidroadapp.domain.model.StudySchedule
 import com.lrds.androidroadapp.domain.model.UserProgressState
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -22,6 +23,14 @@ object ProgressJsonCodec {
         require(root is JsonObject && "topics" in root) {
             "Invalid DroidQuest progress file: missing 'topics' object."
         }
-        json.decodeFromString(UserProgressState.serializer(), trimmed)
+        val decoded = json.decodeFromString(UserProgressState.serializer(), trimmed)
+        val normalizedDays = StudySchedule.normalizeDays(decoded.studyReminderDays)
+        decoded.copy(
+            reminderHour = StudySchedule.clampHour(decoded.reminderHour),
+            studyReminderEnabled = decoded.studyReminderEnabled && normalizedDays.isNotEmpty(),
+            studyReminderDays = normalizedDays,
+            studyReminderHour = StudySchedule.clampHour(decoded.studyReminderHour),
+            studyReminderMinute = StudySchedule.clampMinute(decoded.studyReminderMinute),
+        )
     }
 }

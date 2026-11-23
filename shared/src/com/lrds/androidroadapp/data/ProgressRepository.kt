@@ -7,6 +7,7 @@ import com.lrds.androidroadapp.domain.model.ResourceType
 import com.lrds.androidroadapp.domain.model.ReviewRating
 import com.lrds.androidroadapp.domain.model.SaveStatus
 import com.lrds.androidroadapp.domain.model.StudyLogEntry
+import com.lrds.androidroadapp.domain.model.StudySchedule
 import com.lrds.androidroadapp.domain.model.ThemeMode
 import com.lrds.androidroadapp.domain.model.TopicProgress
 import com.lrds.androidroadapp.domain.model.UserProgressState
@@ -355,6 +356,27 @@ class ProgressRepository(
             prev.copy(
                 dailyReminderEnabled = enabled,
                 reminderHour = hour.coerceIn(0, MAX_REMINDER_HOUR),
+                lastUpdated = now.toString(),
+            )
+        }
+        scheduleSave()
+    }
+
+    fun setStudyScheduleReminder(
+        enabled: Boolean,
+        daysOfWeek: Set<Int> = _state.value.studyReminderDays,
+        hour: Int = _state.value.studyReminderHour,
+        minute: Int = _state.value.studyReminderMinute,
+    ) {
+        val now = clock.now()
+        val normalizedDays = StudySchedule.normalizeDays(daysOfWeek)
+        val effectiveEnabled = enabled && normalizedDays.isNotEmpty()
+        _state.update { prev ->
+            prev.copy(
+                studyReminderEnabled = effectiveEnabled,
+                studyReminderDays = normalizedDays,
+                studyReminderHour = StudySchedule.clampHour(hour),
+                studyReminderMinute = StudySchedule.clampMinute(minute),
                 lastUpdated = now.toString(),
             )
         }

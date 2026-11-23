@@ -73,6 +73,7 @@ import com.lrds.androidroadapp.presentation.review.ReviewQueueContent
 import com.lrds.androidroadapp.presentation.settings.SettingsDialog
 import com.lrds.androidroadapp.presentation.toStableList
 import com.lrds.androidroadapp.presentation.toStableMap
+import com.lrds.androidroadapp.presentation.toStableSet
 import com.lrds.androidroadapp.presentation.trail.TrailQuestNodeRow
 import com.lrds.androidroadapp.presentation.trail.ZoneBannerHeader
 import com.lrds.androidroadapp.presentation.trail.ZoneTeleportBar
@@ -681,6 +682,9 @@ private fun AnimatedSettingsOverlay(
             animationSpec = tween(motion.fastMs, easing = FastOutSlowInEasing),
         ),
     ) {
+        val stableStudyDays = remember(state.progress.studyReminderDays) {
+            state.progress.studyReminderDays.toStableSet()
+        }
         SettingsDialog(
             startDate = state.progress.startDate,
             themeMode = state.progress.themeMode,
@@ -688,12 +692,19 @@ private fun AnimatedSettingsOverlay(
             storageLabel = state.storageLabel,
             dailyReminderEnabled = state.progress.dailyReminderEnabled,
             reminderHour = state.progress.reminderHour,
+            studyReminderEnabled = state.progress.studyReminderEnabled,
+            studyReminderDays = stableStudyDays,
+            studyReminderHour = state.progress.studyReminderHour,
+            studyReminderMinute = state.progress.studyReminderMinute,
             supportsDailyReminders = state.supportsDailyReminders,
             supportsNativeFilePicker = state.supportsNativeFilePicker,
             onClose = { onIntent(DroidQuestIntent.SetSettingsOpen(false)) },
             onSetThemeMode = { onIntent(DroidQuestIntent.SetThemeMode(it)) },
             onUpdateStartDate = { onIntent(DroidQuestIntent.UpdateStartDate(it)) },
             onSetDailyReminder = { enabled, hour -> onIntent(DroidQuestIntent.SetDailyReminder(enabled, hour)) },
+            onSetStudySchedule = { enabled, days, hour, minute ->
+                onIntent(DroidQuestIntent.SetStudySchedule(enabled, days, hour, minute))
+            },
             onExportJson = { onIntent(DroidQuestIntent.ExportBackupJson) },
             onPickJsonFile = { onIntent(DroidQuestIntent.PickBackupJsonFile) },
             onImportJsonRaw = { raw -> onIntent(DroidQuestIntent.ImportBackupJsonRaw(raw)) },
