@@ -19,20 +19,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.components.CalmProgressBar
 import com.lrds.androidroadapp.designsystem.components.PrimaryActionButton
 import com.lrds.androidroadapp.designsystem.components.SecondaryTonalButton
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
-import com.lrds.androidroadapp.domain.curriculum.RoadmapCatalog
 import com.lrds.androidroadapp.domain.model.PillarId
 import com.lrds.androidroadapp.domain.model.PillarStat
 import com.lrds.androidroadapp.domain.model.QuestModule
 import com.lrds.androidroadapp.domain.model.ReviewDueItem
 import com.lrds.androidroadapp.domain.model.TopicProgress
 import com.lrds.androidroadapp.presentation.ActiveTab
+import com.lrds.androidroadapp.presentation.StableList
+import com.lrds.androidroadapp.presentation.StableMap
+
+private const val WIDE_READINESS_WEIGHT = 1.2f
 
 @Composable
 fun HeroDashboard(
@@ -41,31 +43,34 @@ fun HeroDashboard(
     overallPct: Int,
     daysLeft: Int,
     dailyPace: Double,
-    pillarStats: List<PillarStat>,
+    pillarStats: StableList<PillarStat>,
     nextRecommendedQuest: QuestModule?,
-    topics: Map<String, TopicProgress>,
+    topics: StableMap<String, TopicProgress>,
     topDueReview: ReviewDueItem?,
     dueReviewCount: Int,
     onTabChange: (ActiveTab) -> Unit,
     onSelectQuest: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = spacing.screenHorizontal, vertical = spacing.xl),
         contentAlignment = Alignment.Center,
     ) {
-        val isWide = maxWidth >= 820.dp
+        val isWide = maxWidth >= sizing.wideBreakpoint
 
         Column(
-            modifier = Modifier.widthIn(max = 1040.dp).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.widthIn(max = sizing.maxContentWidth).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
             if (isWide) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.xl),
                     verticalAlignment = Alignment.Top,
                 ) {
                     HeroReadinessCard(
@@ -75,11 +80,11 @@ fun HeroDashboard(
                         daysLeft = daysLeft,
                         dailyPace = dailyPace,
                         pillarStats = pillarStats,
-                        modifier = Modifier.weight(1.2f),
+                        modifier = Modifier.weight(WIDE_READINESS_WEIGHT),
                     )
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(spacing.lg),
                     ) {
                         if (dueReviewCount > 0) {
                             ReviewsDueRowCard(
@@ -132,18 +137,22 @@ private fun HeroReadinessCard(
     overallPct: Int,
     daysLeft: Int,
     dailyPace: Double,
-    pillarStats: List<PillarStat>,
+    pillarStats: StableList<PillarStat>,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.ZoneBanner,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(spacing.cardPaddingSpacious),
+            verticalArrangement = Arrangement.spacedBy(spacing.xl),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -162,10 +171,10 @@ private fun HeroReadinessCard(
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.base)) {
                 Row(
                     verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.base),
                 ) {
                     Text(
                         text = "$overallPct%",
@@ -176,57 +185,64 @@ private fun HeroReadinessCard(
                         text = "$completedCount of $totalCount topics mastered",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp),
+                        modifier = Modifier.padding(bottom = spacing.xs),
                     )
                 }
 
                 CalmProgressBar(
                     progress = overallPct / 100f,
-                    height = 6.dp,
+                    height = sizing.progressBarStandard,
                 )
             }
 
-            // Concise 4-column monochrome pillar breakdown
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            HeroPillarBreakdownRow(pillarStats = pillarStats)
+        }
+    }
+}
+
+@Composable
+private fun HeroPillarBreakdownRow(pillarStats: StableList<PillarStat>) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.base),
+    ) {
+        pillarStats.forEach { stat ->
+            val shortName = when (stat.pillar) {
+                PillarId.ANDROID -> "Android"
+                PillarId.DSA -> "DSA"
+                PillarId.SYSTEM_DESIGN -> "Sys Des"
+                PillarId.CAREER -> "Career"
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
-                pillarStats.forEach { stat ->
-                    val shortName = when (stat.pillar) {
-                        PillarId.ANDROID -> "Android"
-                        PillarId.DSA -> "DSA"
-                        PillarId.SYSTEM_DESIGN -> "Sys Des"
-                        PillarId.CAREER -> "Career"
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(5.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = shortName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = "${stat.pct}%",
-                                style = DroidQuestTheme.mono.micro,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                        CalmProgressBar(
-                            progress = stat.pct / 100f,
-                            height = 4.dp,
-                            minVisibleFraction = if (stat.done > 0) 0.08f else 0f,
-                        )
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = shortName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "${stat.pct}%",
+                        style = DroidQuestTheme.mono.micro,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
+                CalmProgressBar(
+                    progress = stat.pct / 100f,
+                    height = sizing.progressBarThin,
+                    minVisibleFraction = if (stat.done > 0) 0.08f else 0f,
+                )
             }
         }
     }
@@ -238,36 +254,40 @@ private fun ReviewsDueRowCard(
     topDueReview: ReviewDueItem?,
     onOpenReviews: () -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.QuestCard,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = spacing.cardPaddingCompact, vertical = spacing.lg),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = DroidQuestCornerShapes.TactileButton,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                modifier = Modifier.size(38.dp),
+                border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.size(sizing.iconBoxSize),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = DroidQuestIcons.Brain,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(sizing.iconLg),
                     )
                 }
             }
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(spacing.xxs),
             ) {
                 Text(
                     text = "$dueReviewCount Review${if (dueReviewCount == 1) "" else "s"} Due",
@@ -285,7 +305,7 @@ private fun ReviewsDueRowCard(
 
             SecondaryTonalButton(
                 onClick = onOpenReviews,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = spacing.lg, vertical = spacing.md),
             ) {
                 Text(
                     text = "Review",
@@ -294,7 +314,7 @@ private fun ReviewsDueRowCard(
                 Icon(
                     imageVector = DroidQuestIcons.ArrowRight,
                     contentDescription = null,
-                    modifier = Modifier.size(14.dp),
+                    modifier = Modifier.size(sizing.iconSm),
                 )
             }
         }
@@ -304,9 +324,12 @@ private fun ReviewsDueRowCard(
 @Composable
 private fun NextQuestActionCard(
     quest: QuestModule,
-    topics: Map<String, TopicProgress>,
+    topics: StableMap<String, TopicProgress>,
     onSelectQuest: (String) -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     val doneSubs = quest.subtopics.count { topics[it.id]?.completed == true }
     val totalSubs = quest.subtopics.size
     val eyebrow = buildString {
@@ -318,12 +341,12 @@ private fun NextQuestActionCard(
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = DroidQuestCornerShapes.QuestCard,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(spacing.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(spacing.base),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -336,7 +359,7 @@ private fun NextQuestActionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                    modifier = Modifier.weight(1f).padding(end = spacing.md),
                 )
                 Text(
                     text = "$doneSubs of $totalSubs subtopics",
@@ -345,7 +368,7 @@ private fun NextQuestActionCard(
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                 Text(
                     text = quest.title,
                     style = MaterialTheme.typography.titleLarge,
@@ -365,7 +388,7 @@ private fun NextQuestActionCard(
             PrimaryActionButton(
                 onClick = { onSelectQuest(quest.id) },
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                contentPadding = PaddingValues(horizontal = spacing.cardPadding, vertical = spacing.lg),
             ) {
                 Text(
                     text = "Continue Quest",
@@ -374,7 +397,7 @@ private fun NextQuestActionCard(
                 Icon(
                     imageVector = DroidQuestIcons.ArrowRight,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(sizing.iconMd),
                 )
             }
         }

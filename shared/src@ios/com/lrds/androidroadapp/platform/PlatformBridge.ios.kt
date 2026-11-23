@@ -36,6 +36,7 @@ import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 
 private const val IOS_REMINDER_ID = "com.lrds.androidroadapp.daily_review"
+private const val MAX_REMINDER_HOUR = 23
 private const val IOS_STUDY_REMINDER_PREFIX = "com.lrds.androidroadapp.study_session.day_"
 private const val IOS_STUDY_THREAD_ID = "droidquest_study_schedule"
 private const val IOS_DEEP_LINK_KEY = "deep_link"
@@ -165,7 +166,8 @@ private class IosPlatformBridge : PlatformBridge {
                 setTitle("DroidQuest Daily Review Radar")
                 setBody(
                     if (dueCount > 0) {
-                        "You have $dueCount spaced-repetition topic${if (dueCount == 1) "" else "s"} ready for active recall!"
+                        val plural = if (dueCount == 1) "" else "s"
+                        "You have $dueCount spaced-repetition topic$plural ready for active recall!"
                     } else {
                         "Keep your 100-Day Senior Android streak alive — review a quest or tackle a topic today!"
                     }
@@ -174,7 +176,7 @@ private class IosPlatformBridge : PlatformBridge {
             }
 
             val components = NSDateComponents().apply {
-                this.hour = hour.coerceIn(0, 23).toLong()
+                this.hour = hour.coerceIn(0, MAX_REMINDER_HOUR).toLong()
                 this.minute = 0L
             }
             val trigger = UNCalendarNotificationTrigger.triggerWithDateMatchingComponents(
@@ -235,7 +237,9 @@ private class IosPlatformBridge : PlatformBridge {
 
             center.removePendingNotificationRequestsWithIdentifiers(IOS_ALL_STUDY_REMINDER_IDS)
 
-            val summary = "${StudySchedule.formatDaysSummary(normalizedDays)} at ${StudySchedule.formatTime(clampedHour, clampedMinute)}"
+            val daysSummary = StudySchedule.formatDaysSummary(normalizedDays)
+            val timeSummary = StudySchedule.formatTime(clampedHour, clampedMinute)
+            val summary = "$daysSummary at $timeSummary"
             val bodyText = if (!nextQuestTitle.isNullOrBlank()) {
                 "Time for your study session — continue \"$nextQuestTitle\"."
             } else {
@@ -299,7 +303,8 @@ private class IosPlatformBridge : PlatformBridge {
     private fun topViewController(): UIViewController? {
         @Suppress("DEPRECATION")
         val keyWindow = UIApplication.sharedApplication.keyWindow
-            ?: UIApplication.sharedApplication.windows.firstOrNull { (it as? UIWindow)?.isKeyWindow() == true } as? UIWindow
+            ?: UIApplication.sharedApplication.windows
+                .firstOrNull { (it as? UIWindow)?.isKeyWindow() == true } as? UIWindow
         var top = keyWindow?.rootViewController
         while (top?.presentedViewController != null) {
             top = top.presentedViewController

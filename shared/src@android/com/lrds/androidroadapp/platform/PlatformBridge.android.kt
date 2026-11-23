@@ -23,7 +23,9 @@ object AndroidPlatformHost {
     private val _pendingDeepLink = MutableStateFlow<DeepLinkTarget?>(null)
     val pendingDeepLink: StateFlow<DeepLinkTarget?> = _pendingDeepLink.asStateFlow()
 
-    var onExportDocumentRequested: ((fileName: String, content: String, onResult: (Boolean, String) -> Unit) -> Unit)? = null
+    var onExportDocumentRequested: (
+        (fileName: String, content: String, onResult: (Boolean, String) -> Unit) -> Unit
+    )? = null
     var onOpenDocumentRequested: ((onPicked: (String?) -> Unit) -> Unit)? = null
     var onRequestNotificationPermission: ((onGranted: (Boolean) -> Unit) -> Unit)? = null
 
@@ -32,7 +34,8 @@ object AndroidPlatformHost {
     }
 
     fun requireAppContext(): Context = requireNotNull(appContext) {
-        "AndroidPlatformHost.init(context) must be called in MainActivity.onCreate() before accessing Room or PlatformBridge."
+        "AndroidPlatformHost.init(context) must be called in MainActivity.onCreate() " +
+            "before accessing Room or PlatformBridge."
     }
 
     fun handleLaunchIntent(intent: Intent?) {
@@ -55,6 +58,8 @@ internal const val STUDY_CHANNEL_ID = "droidquest_study_schedule"
 private const val STUDY_NOTIFICATION_ID = 20040
 private const val STUDY_ALARM_BASE_REQUEST_CODE = 20040
 private const val STUDY_CONTENT_INTENT_REQUEST_CODE = 20048
+private const val DAYS_PER_WEEK = 7
+private const val WEEKLY_INTERVAL_DAYS = 7L
 
 internal const val EXTRA_OPEN_NEXT_QUEST = "com.lrds.androidroadapp.extra.OPEN_NEXT_QUEST"
 internal const val EXTRA_NEXT_QUEST_ID = "com.lrds.androidroadapp.extra.NEXT_QUEST_ID"
@@ -71,14 +76,14 @@ internal fun computeNextWeeklyTriggerMillis(
     val calendar = Calendar.getInstance(timeZone).apply {
         timeInMillis = nowMillis
         val currentCalendarDay = get(Calendar.DAY_OF_WEEK)
-        val daysAhead = (targetCalendarDay - currentCalendarDay + 7) % 7
+        val daysAhead = (targetCalendarDay - currentCalendarDay + DAYS_PER_WEEK) % DAYS_PER_WEEK
         add(Calendar.DAY_OF_YEAR, daysAhead)
         set(Calendar.HOUR_OF_DAY, StudySchedule.clampHour(hour))
         set(Calendar.MINUTE, StudySchedule.clampMinute(minute))
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
         if (timeInMillis <= nowMillis) {
-            add(Calendar.DAY_OF_YEAR, 7)
+            add(Calendar.DAY_OF_YEAR, DAYS_PER_WEEK)
         }
     }
     return calendar.timeInMillis
@@ -246,7 +251,9 @@ private class AndroidPlatformBridge : PlatformBridge {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         runCatching {
-            ctx.startActivity(Intent.createChooser(share, "Export DroidQuest Backup").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            val chooser = Intent.createChooser(share, "Export DroidQuest Backup")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            ctx.startActivity(chooser)
             onResult(true, "Opened share sheet for $fileName")
         }.onFailure {
             onResult(false, "Could not export backup JSON.")
@@ -292,9 +299,9 @@ private class AndroidPlatformBridge : PlatformBridge {
                         onResult(false, "Notification permission denied — enable in Android Settings.")
                     }
                 }
-                return
+            } else {
+                onResult(false, "Notification permission required — enable in Android Settings.")
             }
-            onResult(false, "Notification permission required — enable in Android Settings.")
             return
         }
 
@@ -331,7 +338,9 @@ private class AndroidPlatformBridge : PlatformBridge {
         val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
 
-        val summary = "${StudySchedule.formatDaysSummary(normalizedDays)} at ${StudySchedule.formatTime(clampedHour, clampedMinute)}"
+        val daysSummary = StudySchedule.formatDaysSummary(normalizedDays)
+        val timeSummary = StudySchedule.formatTime(clampedHour, clampedMinute)
+        val summary = "$daysSummary at $timeSummary"
         if (needsPermission) {
             val requester = AndroidPlatformHost.onRequestNotificationPermission
             if (requester != null) {
@@ -352,10 +361,10 @@ private class AndroidPlatformBridge : PlatformBridge {
                         onResult(false, "Notification permission denied — enable in Android Settings.")
                     }
                 }
-                return
+            } else {
+                cancelAllStudyAlarms(ctx, alarmManager)
+                onResult(false, "Notification permission required — enable in Android Settings.")
             }
-            cancelAllStudyAlarms(ctx, alarmManager)
-            onResult(false, "Notification permission required — enable in Android Settings.")
             return
         }
 
@@ -421,7 +430,7 @@ private class AndroidPlatformBridge : PlatformBridge {
         if (notifManager != null) {
             StudySessionReminderReceiver.ensureChannel(notifManager)
         }
-        val weeklyIntervalMillis = AlarmManager.INTERVAL_DAY * 7L
+        val weeklyIntervalMillis = AlarmManager.INTERVAL_DAY * WEEKLY_INTERVAL_DAYS
         StudySchedule.ALL_ISO_DAYS.forEach { isoDay ->
             val pendingIntent = buildStudyPendingIntent(ctx, isoDay, nextQuestId, nextQuestTitle)
             alarmManager?.cancel(pendingIntent)
@@ -448,7 +457,7 @@ private class AndroidPlatformBridge : PlatformBridge {
             ReviewReminderReceiver.ensureChannel(notifManager)
         }
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
+            set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, MAX_REMINDER_HOUR))
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             if (timeInMillis <= System.currentTimeMillis()) {
@@ -461,6 +470,10 @@ private class AndroidPlatformBridge : PlatformBridge {
             AlarmManager.INTERVAL_DAY,
             pendingIntent,
         )
+    }
+
+    private companion object {
+        const val MAX_REMINDER_HOUR = 23
     }
 }
 

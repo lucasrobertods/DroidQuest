@@ -1,5 +1,11 @@
 package com.lrds.androidroadapp.presentation.hud
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,22 +29,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
 import com.lrds.androidroadapp.domain.model.RankInfo
-import com.lrds.androidroadapp.domain.model.SaveStatus
 import com.lrds.androidroadapp.presentation.ActiveTab
+
+private const val THOUSANDS_GROUP_SIZE = 3
 
 fun formatXpNumber(xp: Int): String {
     val negative = xp < 0
     val digits = kotlin.math.abs(xp).toString()
     val grouped = buildString {
         digits.forEachIndexed { idx, ch ->
-            if (idx > 0 && (digits.length - idx) % 3 == 0) append(',')
+            if (idx > 0 && (digits.length - idx) % THOUSANDS_GROUP_SIZE == 0) append(',')
             append(ch)
         }
     }
@@ -53,7 +60,6 @@ fun TopHud(
     currentDay: Int,
     targetDays: Int,
     dueReviewCount: Int,
-    saveStatus: SaveStatus,
     soundEnabled: Boolean,
     isDarkTheme: Boolean,
     activeTab: ActiveTab,
@@ -65,7 +71,8 @@ fun TopHud(
     onGoHome: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val ext = DroidQuestTheme.colors
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -75,65 +82,25 @@ fun TopHud(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = spacing.screenHorizontal, vertical = spacing.base),
                 contentAlignment = Alignment.Center,
             ) {
-                val isWide = maxWidth >= 820.dp
+                val isWide = maxWidth >= sizing.wideBreakpoint
 
                 Column(
-                    modifier = Modifier.widthIn(max = 1040.dp).fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.widthIn(max = sizing.maxContentWidth).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(spacing.lg),
                 ) {
-                    // Compact single-row header
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier
-                                .weight(1f, fill = false)
-                                .clip(DroidQuestCornerShapes.HudPill)
-                                .clickable(onClick = onGoHome)
-                                .padding(end = 6.dp),
-                        ) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceContainer,
-                                shape = DroidQuestCornerShapes.TactileButton,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                                modifier = Modifier.size(34.dp),
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = DroidQuestIcons.Terminal,
-                                        contentDescription = "DroidQuest",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(17.dp),
-                                    )
-                                }
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(
-                                    text = "DroidQuest",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                )
-                                Text(
-                                    text = "Lv.${rankInfo.current.level} · ${rankInfo.current.title}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
+                        TopHudBrandHeader(
+                            rankInfo = rankInfo,
+                            onGoHome = onGoHome,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
 
                         if (isWide) {
                             DesktopTabBar(
@@ -143,58 +110,156 @@ fun TopHud(
                             )
                         }
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            HudGhostIconButton(
-                                icon = if (isDarkTheme) DroidQuestIcons.Sun else DroidQuestIcons.Moon,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
-                                onClick = onToggleTheme,
-                            )
-                            HudGhostIconButton(
-                                icon = if (soundEnabled) DroidQuestIcons.Volume2 else DroidQuestIcons.VolumeX,
-                                tint = if (soundEnabled) MaterialTheme.colorScheme.onSurfaceVariant else ext.inkSubtle,
-                                contentDescription = if (soundEnabled) "Mute effects" else "Enable effects",
-                                onClick = onToggleSound,
-                            )
-                            HudGhostIconButton(
-                                icon = DroidQuestIcons.Settings,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                contentDescription = "Settings & Backup",
-                                onClick = onOpenSettings,
-                            )
-                        }
+                        TopHudActionButtons(
+                            soundEnabled = soundEnabled,
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = onToggleTheme,
+                            onToggleSound = onToggleSound,
+                            onOpenSettings = onOpenSettings,
+                        )
                     }
 
-                    // Unified 3-pill monochrome telemetry strip (shown on Trail / Home)
-                    if (showTelemetryStrip) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            TelemetryPill(
-                                icon = DroidQuestIcons.CalendarClock,
-                                label = "Day $currentDay/$targetDays",
-                                modifier = Modifier.weight(1f),
-                            )
-                            TelemetryPill(
-                                icon = DroidQuestIcons.Flame,
-                                label = "${streak}d streak",
-                                modifier = Modifier.weight(1f),
-                            )
-                            TelemetryPill(
-                                icon = DroidQuestIcons.Zap,
-                                label = "${formatXpNumber(totalXp)} XP",
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
+                    TopHudTelemetryStrip(
+                        visible = showTelemetryStrip,
+                        currentDay = currentDay,
+                        targetDays = targetDays,
+                        streak = streak,
+                        totalXp = totalXp,
+                    )
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        }
+    }
+}
+
+@Composable
+private fun TopHudBrandHeader(
+    rankInfo: RankInfo,
+    onGoHome: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.base),
+        modifier = modifier
+            .clip(DroidQuestCornerShapes.HudPill)
+            .clickable(onClick = onGoHome)
+            .padding(end = spacing.sm),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = DroidQuestCornerShapes.TactileButton,
+            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
+            modifier = Modifier.size(sizing.appBadgeSize),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = DroidQuestIcons.Terminal,
+                    contentDescription = "DroidQuest",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(sizing.iconMd),
+                )
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+        ) {
+            Text(
+                text = "DroidQuest",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            Text(
+                text = "Lv.${rankInfo.current.level} · ${rankInfo.current.title}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopHudActionButtons(
+    soundEnabled: Boolean,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
+    onToggleSound: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    val ext = DroidQuestTheme.colors
+    val spacing = DroidQuestTheme.spacing
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HudGhostIconButton(
+            icon = if (isDarkTheme) DroidQuestIcons.Sun else DroidQuestIcons.Moon,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
+            onClick = onToggleTheme,
+        )
+        HudGhostIconButton(
+            icon = if (soundEnabled) DroidQuestIcons.Volume2 else DroidQuestIcons.VolumeX,
+            tint = if (soundEnabled) MaterialTheme.colorScheme.onSurfaceVariant else ext.inkSubtle,
+            contentDescription = if (soundEnabled) "Mute effects" else "Enable effects",
+            onClick = onToggleSound,
+        )
+        HudGhostIconButton(
+            icon = DroidQuestIcons.Settings,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            contentDescription = "Settings & Backup",
+            onClick = onOpenSettings,
+        )
+    }
+}
+
+@Composable
+private fun TopHudTelemetryStrip(
+    visible: Boolean,
+    currentDay: Int,
+    targetDays: Int,
+    streak: Int,
+    totalXp: Int,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val motion = DroidQuestTheme.motion
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(motion.fastMs)) + expandVertically(tween(motion.standardMs)),
+        exit = fadeOut(tween(motion.fastMs)) + shrinkVertically(tween(motion.standardMs)),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TelemetryPill(
+                icon = DroidQuestIcons.CalendarClock,
+                label = "Day $currentDay/$targetDays",
+                modifier = Modifier.weight(1f),
+            )
+            TelemetryPill(
+                icon = DroidQuestIcons.Flame,
+                label = "${streak}d streak",
+                modifier = Modifier.weight(1f),
+            )
+            TelemetryPill(
+                icon = DroidQuestIcons.Zap,
+                label = "${formatXpNumber(totalXp)} XP",
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
@@ -205,22 +270,26 @@ private fun TelemetryPill(
     label: String,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.HudPill,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = spacing.base, vertical = spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm, Alignment.CenterHorizontally),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(sizing.iconSm),
             )
             Text(
                 text = label,
@@ -239,6 +308,8 @@ private fun DesktopTabBar(
     dueReviewCount: Int,
     onSelectTab: (ActiveTab) -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
     val tabs = listOf(
         ActiveTab.TRAIL to "Trail",
         ActiveTab.CHECKLIST to "Checklist",
@@ -249,29 +320,33 @@ private fun DesktopTabBar(
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.FullPill,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
-            modifier = Modifier.padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(spacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEach { (tab, label) ->
                 val selected = activeTab == tab
+                val textColor = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
                 Box(
                     modifier = Modifier
                         .clip(DroidQuestCornerShapes.FullPill)
                         .background(
-                            if (selected) MaterialTheme.colorScheme.surfaceContainerHighest
-                            else androidx.compose.ui.graphics.Color.Transparent
+                            if (selected) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent
                         )
                         .clickable { onSelectTab(tab) }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = spacing.lg, vertical = spacing.sm),
                 ) {
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelLarge,
-                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = textColor,
                     )
                 }
             }
@@ -282,13 +357,14 @@ private fun DesktopTabBar(
 @Composable
 private fun HudGhostIconButton(
     icon: ImageVector,
-    tint: androidx.compose.ui.graphics.Color,
+    tint: Color,
     contentDescription: String,
     onClick: () -> Unit,
 ) {
+    val sizing = DroidQuestTheme.sizing
     Box(
         modifier = Modifier
-            .size(34.dp)
+            .size(sizing.ghostButtonSize)
             .clip(CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -297,7 +373,7 @@ private fun HudGhostIconButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = tint,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(sizing.iconLg),
         )
     }
 }

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -86,7 +87,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             App(
-                onThemeChanged = { isDark ->
+                onThemeChange = { isDark ->
                     val style = if (isDark) {
                         SystemBarStyle.dark(Color.TRANSPARENT)
                     } else {
@@ -96,7 +97,10 @@ class MainActivity : ComponentActivity() {
                         statusBarStyle = style,
                         navigationBarStyle = style,
                     )
-                }
+                },
+                platformBackHandler = { enabled, onBack ->
+                    BackHandler(enabled = enabled, onBack = onBack)
+                },
             )
         }
     }
@@ -119,6 +123,6 @@ class MainActivity : ComponentActivity() {
 
 @Preview
 @Composable
-fun AppAndroidPreview() {
+private fun AppAndroidPreview() {
     App()
 }

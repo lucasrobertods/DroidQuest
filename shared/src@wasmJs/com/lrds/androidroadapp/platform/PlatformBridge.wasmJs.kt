@@ -6,11 +6,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlin.js.ExperimentalWasmJsInterop
 
 @OptIn(ExperimentalWasmJsInterop::class)
+@Suppress("UnusedParameter") // Referenced inside Kotlin/Wasm js() snippet
 private fun jsOpenUrl(url: String) {
-    js("if (typeof globalThis.window !== 'undefined') { globalThis.window.open(url, '_blank', 'noopener,noreferrer'); }")
+    js(
+        """
+        if (typeof globalThis.window !== 'undefined') {
+          globalThis.window.open(url, '_blank', 'noopener,noreferrer');
+        }
+        """
+    )
 }
 
 @OptIn(ExperimentalWasmJsInterop::class)
+@Suppress("UnusedParameter") // Referenced inside Kotlin/Wasm js() snippet
 private fun jsDownloadJsonFile(fileName: String, content: String): Boolean =
     js(
         """
@@ -34,6 +42,7 @@ private fun jsDownloadJsonFile(fileName: String, content: String): Boolean =
     )
 
 @OptIn(ExperimentalWasmJsInterop::class)
+@Suppress("UnusedParameter") // Referenced inside Kotlin/Wasm js() snippet
 private fun jsPickJsonFile(onLoaded: (String) -> Unit) {
     js(
         """

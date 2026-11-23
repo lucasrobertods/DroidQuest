@@ -1,0 +1,136 @@
+# Android & Kotlin Security Ruleset (OWASP MASVS / Mobile Top 10)
+# Complements Semgrep Registry packs: p/kotlin, r/java.android, and p/owasp-top-ten.
+rules:
+  - id: android-manifest-debuggable-enabled
+    languages: [xml]
+    severity: ERROR
+    message: >
+      android:debuggable="true" allows attackers to attach a debugger and inspect
+      memory or bypass security controls. Remove it from AndroidManifest.xml and rely
+      on debug build variants instead.
+    metadata:
+      category: security
+      cwe:
+        - "CWE-489: Active Debug Code"
+      owasp:
+        - "A05:2021 - Security Misconfiguration"
+      technology:
+        - android
+    paths:
+      include:
+        - "**/AndroidManifest.xml"
+    pattern: <application ... android:debuggable="true" ... />
+
+  - id: android-manifest-cleartext-traffic-enabled
+    languages: [xml]
+    severity: ERROR
+    message: >
+      android:usesCleartextTraffic="true" permits unencrypted HTTP traffic and exposes
+      app data to MITM interception. Enforce HTTPS via Network Security Configuration.
+    metadata:
+      category: security
+      cwe:
+        - "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp:
+        - "A02:2021 - Cryptographic Failures"
+      technology:
+        - android
+    paths:
+      include:
+        - "**/AndroidManifest.xml"
+    pattern: <application ... android:usesCleartextTraffic="true" ... />
+
+  - id: android-kotlin-mutable-pending-intent
+    languages: [kotlin]
+    severity: WARNING
+    message: >
+      PendingIntent.FLAG_MUTABLE allows other apps to modify the wrapped Intent.
+      Prefer PendingIntent.FLAG_IMMUTABLE unless mutability is explicitly required
+      (e.g., inline replies or bubbles) and use an explicit component Intent.
+    metadata:
+      category: security
+      cwe:
+        - "CWE-927: Use of Implicit Intent for Sensitive Communication"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - android
+        - kotlin
+    pattern: PendingIntent.FLAG_MUTABLE
+
+  - id: android-kotlin-webview-js-enabled
+    languages: [kotlin]
+    severity: WARNING
+    message: >
+      Enabling JavaScript in WebView increases XSS and JavaScript-bridge attack surface.
+      Ensure only trusted HTTPS origins are loaded and restrict file/content access.
+    metadata:
+      category: security
+      cwe:
+        - "CWE-749: Exposed Dangerous Method or Function"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - android
+        - kotlin
+    pattern: $SETTINGS.javaScriptEnabled = true
+
+  - id: android-kotlin-webview-file-access
+    languages: [kotlin]
+    severity: ERROR
+    message: >
+      Allowing universal or file URL access from WebView exposes local app files to
+      untrusted scripts. Set allowUniversalAccessFromFileURLs and allowFileAccessFromFileURLs to false.
+    metadata:
+      category: security
+      cwe:
+        - "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - android
+        - kotlin
+    pattern-either:
+      - pattern: $SETTINGS.allowUniversalAccessFromFileURLs = true
+      - pattern: $SETTINGS.allowFileAccessFromFileURLs = true
+
+  - id: android-kotlin-world-accessible-mode
+    languages: [kotlin]
+    severity: ERROR
+    message: >
+      MODE_WORLD_READABLE and MODE_WORLD_WRITEABLE expose private app files to any
+      application on the device. Use Context.MODE_PRIVATE instead.
+    metadata:
+      category: security
+      cwe:
+        - "CWE-732: Incorrect Permission Assignment for Critical Resource"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - android
+        - kotlin
+    pattern-either:
+      - pattern: Context.MODE_WORLD_READABLE
+      - pattern: Context.MODE_WORLD_WRITEABLE
+
+  - id: android-kotlin-insecure-webview-ssl-proceed
+    languages: [kotlin]
+    severity: ERROR
+    message: >
+      Calling handler.proceed() in onReceivedSslError bypasses TLS certificate validation
+      and enables MITM attacks. Always cancel or fail closed on SSL errors.
+    metadata:
+      category: security
+      cwe:
+        - "CWE-295: Improper Certificate Validation"
+      owasp:
+        - "A07:2021 - Identification and Authentication Failures"
+      technology:
+        - android
+        - kotlin
+    pattern: |
+      override fun onReceivedSslError($VIEW: WebView?, $HANDLER: SslErrorHandler?, $ERROR: SslError?) {
+        ...
+        $HANDLER?.proceed()
+        ...
+      }
