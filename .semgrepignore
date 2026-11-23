@@ -1,0 +1,19 @@
+# Build & tool caches
+build/
+.kotlin/
+.gradle/
+.idea/
+
+# Binary / static resources
+**/composeResources/**
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webp
+**/*.ttf
+**/*.otf
+**/*.jar
+**/*.zip
+
+# Xcode generated project metadata
+iosApp/module.xcodeproj/

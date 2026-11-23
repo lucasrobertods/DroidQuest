@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             App(
-                onThemeChanged = { isDark ->
+                onThemeChange = { isDark ->
                     val style = if (isDark) {
                         SystemBarStyle.dark(Color.TRANSPARENT)
                     } else {
@@ -115,6 +115,6 @@ class MainActivity : ComponentActivity() {
 
 @Preview
 @Composable
-fun AppAndroidPreview() {
+private fun AppAndroidPreview() {
     App()
 }

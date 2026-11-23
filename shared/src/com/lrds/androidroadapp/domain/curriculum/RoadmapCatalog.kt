@@ -23,6 +23,10 @@ import kotlin.time.Instant
 
 @OptIn(ExperimentalTime::class)
 object RoadmapCatalog {
+    private const val PERCENT_SCALE = 100.0
+    private const val MAX_PERCENT = 100
+    private const val YEAR_PAD_LENGTH = 4
+
     val zones: List<AdventureZone> = ZonesCatalog.zones
 
     val quests: List<QuestModule> = AndroidQuestsCatalog.quests + DsaAndDesignQuestsCatalog.quests
@@ -81,12 +85,12 @@ object RoadmapCatalog {
 
         val span = (next.minXp - current.minXp).coerceAtLeast(1)
         val earnedInTier = (xp - current.minXp).coerceAtLeast(0)
-        val pct = ((earnedInTier.toDouble() / span) * 100.0).roundToInt().coerceIn(0, 100)
+        val pct = ((earnedInTier.toDouble() / span) * PERCENT_SCALE).roundToInt().coerceIn(0, MAX_PERCENT)
         return RankInfo(current = current, next = next, progressPct = pct)
     }
 
     fun formatDateKey(date: LocalDate): String {
-        val y = date.year.toString().padStart(4, '0')
+        val y = date.year.toString().padStart(YEAR_PAD_LENGTH, '0')
         val m = date.month.number.toString().padStart(2, '0')
         val d = date.day.toString().padStart(2, '0')
         return "$y-$m-$d"

@@ -165,6 +165,13 @@ val DroidQuestLightColorScheme = lightColorScheme(
     scrim = Color(0x660F172A),
 )
 
+val DarkNavPillSurface = Color(0xFF141A24)
+val DarkNavPillBorder = Color(0xFF263042)
+val DarkHeatmapZero = Color(0xFF18202E)
+val DarkHeatmapLow = Color(0xFF14452B)
+val DarkHeatmapMid = Color(0xFF198744)
+val DarkHeatmapHigh = Color(0xFF22C55E)
+
 @Immutable
 data class ZoneVisualTokens(
     val primary: Color,
@@ -175,7 +182,7 @@ data class ZoneVisualTokens(
     val accentText: Color,
     val ledgeShadow: Color,
     val glow: Color,
-    val onPrimaryBadge: Color = Color(0xFF051F10),
+    val onPrimaryBadge: Color = DroidEmeraldDeep,
 )
 
 @Immutable
@@ -211,12 +218,12 @@ data class DroidQuestExtendedColors(
     val streakContainer: Color = MidnightContainer,
     val inkSecondary: Color = InkSecondary,
     val inkSubtle: Color = InkSubtle,
-    val navPillSurface: Color = Color(0xFF141A24),
-    val navPillBorder: Color = Color(0xFF263042),
-    val heatmapZero: Color = Color(0xFF18202E),
-    val heatmapLow: Color = Color(0xFF14452B),
-    val heatmapMid: Color = Color(0xFF198744),
-    val heatmapHigh: Color = Color(0xFF22C55E),
+    val navPillSurface: Color = DarkNavPillSurface,
+    val navPillBorder: Color = DarkNavPillBorder,
+    val heatmapZero: Color = DarkHeatmapZero,
+    val heatmapLow: Color = DarkHeatmapLow,
+    val heatmapMid: Color = DarkHeatmapMid,
+    val heatmapHigh: Color = DarkHeatmapHigh,
 ) {
     fun zone(id: ZoneId): ZoneVisualTokens = zones.getValue(id)
     fun pillar(id: PillarId): PillarVisualTokens = pillars.getValue(id)

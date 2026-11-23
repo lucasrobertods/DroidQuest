@@ -75,6 +75,12 @@ data class CelebrationEvent(
     val isBoss: Boolean = false,
 )
 
+private const val DEFAULT_TARGET_DAYS = 100
+private const val DEFAULT_DAILY_PACE = 0.9
+private const val REVIEW_BONUS_XP = 25
+private const val PERCENT_SCALE = 100.0
+private const val MONTH_SHORT_LENGTH = 3
+
 data class DroidQuestUiState(
     val progress: UserProgressState,
     val saveStatus: SaveStatus,
@@ -89,7 +95,12 @@ data class DroidQuestUiState(
     val totalXp: Int = 0,
     val rankInfo: RankInfo = RoadmapCatalog.getRankForXp(0),
     val streak: Int = 0,
-    val countdown: SprintCountdown = SprintCountdown(1, 100, 0.9, 1),
+    val countdown: SprintCountdown = SprintCountdown(
+        currentDay = 1,
+        daysLeft = DEFAULT_TARGET_DAYS,
+        dailyPace = DEFAULT_DAILY_PACE,
+        timeProgressPct = 1,
+    ),
     val pillarStats: List<PillarStat> = emptyList(),
     val dueNow: List<ReviewDueItem> = emptyList(),
     val upcoming: List<ReviewDueItem> = emptyList(),
@@ -188,95 +199,77 @@ class DroidQuestViewModel(
 
     fun onIntent(intent: DroidQuestIntent) {
         when (intent) {
-            is DroidQuestIntent.SelectTab -> {
-                overrides.update { it.copy(activeTab = intent.tab) }
-            }
-            DroidQuestIntent.ToggleHighYield -> {
-                overrides.update { it.copy(highYieldOnly = !it.highYieldOnly) }
-            }
-            is DroidQuestIntent.SelectQuest -> {
-                overrides.update { it.copy(selectedQuestId = intent.questId) }
-            }
-            is DroidQuestIntent.SetSettingsOpen -> {
-                overrides.update { it.copy(settingsOpen = intent.open) }
-            }
-            is DroidQuestIntent.ToggleTopicComplete -> {
+            is DroidQuestIntent.SelectTab -> overrides.update { it.copy(activeTab = intent.tab) }
+            DroidQuestIntent.ToggleHighYield -> overrides.update { it.copy(highYieldOnly = !it.highYieldOnly) }
+            is DroidQuestIntent.SelectQuest -> overrides.update { it.copy(selectedQuestId = intent.questId) }
+            is DroidQuestIntent.SetSettingsOpen -> overrides.update { it.copy(settingsOpen = intent.open) }
+            is DroidQuestIntent.ToggleTopicComplete ->
                 applyOutcome(repository.toggleTopicComplete(intent.subtopicId))
-            }
-            is DroidQuestIntent.RecordReview -> {
+            is DroidQuestIntent.RecordReview ->
                 applyOutcome(repository.recordReview(intent.subtopicId, intent.rating))
-            }
-            is DroidQuestIntent.ToggleFlagForReview -> {
+            is DroidQuestIntent.ToggleFlagForReview ->
                 applyOutcome(repository.toggleFlagForReview(intent.subtopicId))
-            }
-            is DroidQuestIntent.UpdateQuestNote -> {
-                repository.updateQuestNote(intent.questId, intent.note)
-            }
-            is DroidQuestIntent.AddCustomLink -> {
+            is DroidQuestIntent.UpdateQuestNote -> repository.updateQuestNote(intent.questId, intent.note)
+            is DroidQuestIntent.AddCustomLink ->
                 applyOutcome(repository.addCustomLink(intent.questId, intent.title, intent.url, intent.type))
-            }
-            is DroidQuestIntent.RemoveCustomLink -> {
-                repository.removeCustomLink(intent.questId, intent.linkId)
-            }
-            is DroidQuestIntent.UpdateStartDate -> {
-                applyOutcome(repository.updateStartDate(intent.startDate))
-            }
-            DroidQuestIntent.ToggleSound -> {
-                applyOutcome(repository.toggleSound())
-            }
-            is DroidQuestIntent.SetThemeMode -> {
-                applyOutcome(repository.setThemeMode(intent.mode))
-            }
-            is DroidQuestIntent.SetDailyReminder -> {
-                val dueCount = uiState.value.dueNow.size
-                platformBridge.syncDailyReviewReminder(
-                    enabled = intent.enabled,
-                    hour = intent.hour,
-                    dueCount = dueCount,
-                ) { granted, message ->
-                    val effectiveEnabled = intent.enabled && granted
-                    repository.setDailyReminder(effectiveEnabled, intent.hour)
-                    showToast(
-                        message = message,
-                        tone = if (effectiveEnabled) ToastTone.VIOLET else ToastTone.AMBER,
-                    )
-                }
-            }
-            is DroidQuestIntent.OpenExternalUrl -> {
-                platformBridge.openUrl(intent.url)
-            }
-            DroidQuestIntent.ExportBackupJson -> {
-                val todayKey = RoadmapCatalog.getTodayKey(clock.now(), timeZoneProvider())
-                val fileName = "droidquest-progress-$todayKey.json"
-                val content = repository.exportProgressJson()
-                platformBridge.exportProgressJson(fileName, content) { ok, message ->
-                    showToast(message, if (ok) ToastTone.EMERALD else ToastTone.ROSE)
-                }
-            }
-            DroidQuestIntent.PickBackupJsonFile -> {
-                platformBridge.pickProgressJson { raw ->
-                    if (!raw.isNullOrBlank()) {
-                        val outcome = repository.importProgressJson(raw)
-                        applyOutcome(outcome)
-                        if (outcome.success) {
-                            overrides.update { it.copy(settingsOpen = false) }
-                        }
-                    }
-                }
-            }
-            is DroidQuestIntent.ImportBackupJsonRaw -> {
-                val outcome = repository.importProgressJson(intent.raw)
-                applyOutcome(outcome)
-                if (outcome.success) {
-                    overrides.update { it.copy(settingsOpen = false) }
-                }
-            }
-            DroidQuestIntent.ResetProgress -> {
-                val outcome = repository.resetProgress()
-                applyOutcome(outcome)
-                overrides.update { it.copy(settingsOpen = false) }
+            is DroidQuestIntent.RemoveCustomLink -> repository.removeCustomLink(intent.questId, intent.linkId)
+            is DroidQuestIntent.UpdateStartDate -> applyOutcome(repository.updateStartDate(intent.startDate))
+            DroidQuestIntent.ToggleSound -> applyOutcome(repository.toggleSound())
+            is DroidQuestIntent.SetThemeMode -> applyOutcome(repository.setThemeMode(intent.mode))
+            is DroidQuestIntent.SetDailyReminder -> handleSetDailyReminder(intent.enabled, intent.hour)
+            is DroidQuestIntent.OpenExternalUrl -> platformBridge.openUrl(intent.url)
+            DroidQuestIntent.ExportBackupJson -> handleExportBackupJson()
+            DroidQuestIntent.PickBackupJsonFile -> handlePickBackupJsonFile()
+            is DroidQuestIntent.ImportBackupJsonRaw -> handleImportBackupJson(intent.raw)
+            DroidQuestIntent.ResetProgress -> handleResetProgress()
+        }
+    }
+
+    private fun handleSetDailyReminder(enabled: Boolean, hour: Int) {
+        val dueCount = uiState.value.dueNow.size
+        platformBridge.syncDailyReviewReminder(
+            enabled = enabled,
+            hour = hour,
+            dueCount = dueCount,
+        ) { granted, message ->
+            val effectiveEnabled = enabled && granted
+            repository.setDailyReminder(effectiveEnabled, hour)
+            showToast(
+                message = message,
+                tone = if (effectiveEnabled) ToastTone.VIOLET else ToastTone.AMBER,
+            )
+        }
+    }
+
+    private fun handleExportBackupJson() {
+        val todayKey = RoadmapCatalog.getTodayKey(clock.now(), timeZoneProvider())
+        val fileName = "droidquest-progress-$todayKey.json"
+        val content = repository.exportProgressJson()
+        platformBridge.exportProgressJson(fileName, content) { ok, message ->
+            showToast(message, if (ok) ToastTone.EMERALD else ToastTone.ROSE)
+        }
+    }
+
+    private fun handlePickBackupJsonFile() {
+        platformBridge.pickProgressJson { raw ->
+            if (!raw.isNullOrBlank()) {
+                handleImportBackupJson(raw)
             }
         }
+    }
+
+    private fun handleImportBackupJson(raw: String) {
+        val outcome = repository.importProgressJson(raw)
+        applyOutcome(outcome)
+        if (outcome.success) {
+            overrides.update { it.copy(settingsOpen = false) }
+        }
+    }
+
+    private fun handleResetProgress() {
+        val outcome = repository.resetProgress()
+        applyOutcome(outcome)
+        overrides.update { it.copy(settingsOpen = false) }
     }
 
     fun getCurrentBackupJson(): String = repository.exportProgressJson()
@@ -337,13 +330,13 @@ class DroidQuestViewModel(
         }
 
         val totalReviewsCompleted = progress.topics.values.sumOf { it.reviewCount }
-        val reviewBonusXp = totalReviewsCompleted * 25
+        val reviewBonusXp = totalReviewsCompleted * REVIEW_BONUS_XP
         val totalXp = topicXp + reviewBonusXp
 
         val pillarStats = PillarId.entries.map { pillar ->
             val done = doneByPillar[pillar] ?: 0
             val total = totalByPillar[pillar] ?: 0
-            val pct = if (total > 0) ((done.toDouble() / total) * 100.0).roundToInt() else 0
+            val pct = if (total > 0) ((done.toDouble() / total) * PERCENT_SCALE).roundToInt() else 0
             PillarStat(pillar = pillar, done = done, total = total, pct = pct)
         }
 
@@ -363,7 +356,7 @@ class DroidQuestViewModel(
         )
 
         val overallPct = if (RoadmapCatalog.totalTopics > 0) {
-            ((completed.toDouble() / RoadmapCatalog.totalTopics) * 100.0).roundToInt()
+            ((completed.toDouble() / RoadmapCatalog.totalTopics) * PERCENT_SCALE).roundToInt()
         } else {
             0
         }
@@ -413,7 +406,9 @@ class DroidQuestViewModel(
             HeatmapDay(
                 dateKey = key,
                 dayOfMonth = date.day.toString(),
-                monthShort = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() },
+                monthShort = date.month.name.take(MONTH_SHORT_LENGTH)
+                    .lowercase()
+                    .replaceFirstChar { it.uppercase() },
                 score = score,
                 xp = entry?.xpEarned ?: 0,
             )

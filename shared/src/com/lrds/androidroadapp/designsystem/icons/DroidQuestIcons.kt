@@ -173,7 +173,8 @@ object DroidQuestIcons {
     val Volume2: ImageVector by lazy {
         lucide("Volume2") {
             strokePath {
-                moveTo(11f, 5f); lineTo(6f, 9f); lineTo(2f, 9f); lineTo(2f, 15f); lineTo(6f, 15f); lineTo(11f, 19f); close()
+                moveTo(11f, 5f); lineTo(6f, 9f); lineTo(2f, 9f)
+                lineTo(2f, 15f); lineTo(6f, 15f); lineTo(11f, 19f); close()
                 moveTo(15.5f, 8.5f); curveTo(17.5f, 10.5f, 17.5f, 13.5f, 15.5f, 15.5f)
                 moveTo(18.5f, 5.5f); curveTo(22f, 9f, 22f, 15f, 18.5f, 18.5f)
             }
@@ -183,7 +184,8 @@ object DroidQuestIcons {
     val VolumeX: ImageVector by lazy {
         lucide("VolumeX") {
             strokePath {
-                moveTo(11f, 5f); lineTo(6f, 9f); lineTo(2f, 9f); lineTo(2f, 15f); lineTo(6f, 15f); lineTo(11f, 19f); close()
+                moveTo(11f, 5f); lineTo(6f, 9f); lineTo(2f, 9f)
+                lineTo(2f, 15f); lineTo(6f, 15f); lineTo(11f, 19f); close()
                 moveTo(22f, 9f); lineTo(16f, 15f)
                 moveTo(16f, 9f); lineTo(22f, 15f)
             }
@@ -260,7 +262,8 @@ object DroidQuestIcons {
     val Zap: ImageVector by lazy {
         lucide("Zap") {
             strokePath {
-                moveTo(13f, 2f); lineTo(4f, 14f); lineTo(11f, 14f); lineTo(10f, 22f); lineTo(20f, 10f); lineTo(13f, 10f); close()
+                moveTo(13f, 2f); lineTo(4f, 14f); lineTo(11f, 14f)
+                lineTo(10f, 22f); lineTo(20f, 10f); lineTo(13f, 10f); close()
             }
         }
     }
@@ -333,7 +336,8 @@ object DroidQuestIcons {
     val Crown: ImageVector by lazy {
         lucide("Crown") {
             strokePath {
-                moveTo(3f, 18f); lineTo(4.5f, 8f); lineTo(9f, 12f); lineTo(12f, 5.5f); lineTo(15f, 12f); lineTo(19.5f, 8f); lineTo(21f, 18f); close()
+                moveTo(3f, 18f); lineTo(4.5f, 8f); lineTo(9f, 12f); lineTo(12f, 5.5f)
+                lineTo(15f, 12f); lineTo(19.5f, 8f); lineTo(21f, 18f); close()
             }
         }
     }
@@ -617,7 +621,8 @@ object DroidQuestIcons {
         lucide("FlaskConical") {
             strokePath {
                 moveTo(9f, 3f); lineTo(15f, 3f)
-                moveTo(10f, 3f); lineTo(10f, 9f); lineTo(4.5f, 19f); lineTo(19.5f, 19f); lineTo(14f, 9f); lineTo(14f, 3f)
+                moveTo(10f, 3f); lineTo(10f, 9f); lineTo(4.5f, 19f)
+                lineTo(19.5f, 19f); lineTo(14f, 9f); lineTo(14f, 3f)
                 moveTo(7.5f, 14.5f); lineTo(16.5f, 14.5f)
             }
         }
@@ -673,7 +678,8 @@ object DroidQuestIcons {
     val FolderGit2: ImageVector by lazy {
         lucide("FolderGit2") {
             strokePath {
-                moveTo(3f, 6f); lineTo(9f, 6f); lineTo(11f, 8.5f); lineTo(21f, 8.5f); lineTo(21f, 19f); lineTo(3f, 19f); close()
+                moveTo(3f, 6f); lineTo(9f, 6f); lineTo(11f, 8.5f)
+                lineTo(21f, 8.5f); lineTo(21f, 19f); lineTo(3f, 19f); close()
             }
             circleStroke(9.5f, 14f, 1.6f)
             circleStroke(15.5f, 14f, 1.6f)

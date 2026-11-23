@@ -1,0 +1,172 @@
+# Detekt + Jetpack Compose Rules configuration for DroidQuest (KMP + Compose Multiplatform)
+# Run with:
+#   detekt-cli --build-upon-default-config \
+#     --config config/detekt/detekt.yml \
+#     --plugins detekt-compose-<version>-all.jar
+
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  warningsAsErrors: true
+
+complexity:
+  active: true
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 15
+    ignoreSingleWhenExpression: true
+    ignoreSimpleWhenEntries: true
+  LargeClass:
+    active: true
+    threshold: 600
+    # Static curriculum data and SVG vector icon catalogs are pure definitions.
+    excludes:
+      - '**/domain/curriculum/**'
+      - '**/designsystem/icons/**'
+  LongMethod:
+    active: true
+    threshold: 80
+  LongParameterList:
+    active: true
+    functionThreshold: 8
+    constructorThreshold: 10
+    ignoreDefaultParameters: true
+    ignoreDataClasses: true
+    ignoreAnnotated:
+      - 'Composable'
+  NestedBlockDepth:
+    active: true
+    threshold: 4
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 25
+    thresholdInClasses: 20
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
+    thresholdInEnums: 15
+    ignorePrivate: true
+    ignoreOverridden: true
+
+naming:
+  active: true
+  FunctionNaming:
+    active: true
+    excludes:
+      - '**/test/**'
+      - '**/test@*/**'
+    ignoreAnnotated:
+      - 'Composable'
+  # Amper permits flat module src/ layouts (e.g., androidApp/src/MainActivity.kt) alongside nested packages.
+  InvalidPackageDeclaration:
+    active: false
+  MatchingDeclarationName:
+    active: true
+    excludes:
+      - '**/Platform*.kt'
+      - '**/designsystem/theme/Type.kt'
+  TopLevelPropertyNaming:
+    active: true
+    constantPattern: '[A-Z][A-Za-z0-9_]*'
+
+style:
+  active: true
+  MagicNumber:
+    active: true
+    excludes:
+      - '**/test/**'
+      - '**/test@*/**'
+    ignoreNumbers: ['-1', '0', '1', '2']
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignoreRanges: true
+    ignoreExtensionFunctions: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+    excludes:
+      - '**/domain/curriculum/**'
+    excludePackageStatements: true
+    excludeImportStatements: true
+    excludeCommentStatements: true
+    excludeRawStrings: true
+  UnusedPrivateMember:
+    active: true
+    ignoreAnnotated:
+      - 'Preview'
+
+# io.nlopez.compose.rules:detekt
+Compose:
+  active: true
+  ComposableAnnotationNaming:
+    active: true
+  ComposableNaming:
+    active: true
+  ComposableParamOrder:
+    active: true
+  CompositionLocalAllowlist:
+    active: true
+    allowedCompositionLocals: 'LocalDroidQuestColors,LocalDroidQuestMono,LocalDroidQuestSpacing,LocalDroidQuestSizing,LocalDroidQuestBorders,LocalDroidQuestMotion'
+  CompositionLocalNaming:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ContentSlotReused:
+    active: true
+  ContentTrailingLambda:
+    active: true
+  DefaultsVisibility:
+    active: true
+  LambdaParameterEventTrailing:
+    active: true
+  LambdaParameterInRestartableEffect:
+    active: true
+  Material2:
+    active: true
+  ModifierClickableOrder:
+    active: true
+  ModifierComposed:
+    active: true
+  ModifierMissing:
+    active: true
+    checkModifiersForVisibility: 'only_public'
+  ModifierNaming:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true
+  ModifierReused:
+    active: true
+  ModifierWithoutDefault:
+    active: true
+  MultipleEmitters:
+    active: true
+  MutableParams:
+    active: true
+  MutableStateAutoboxing:
+    active: true
+  MutableStateParam:
+    active: true
+  ParameterNaming:
+    active: true
+  PreviewAnnotationNaming:
+    active: true
+  PreviewPublic:
+    active: true
+  RememberContentMissing:
+    active: true
+  RememberMissing:
+    active: true
+  UnstableCollections:
+    active: true
+  ViewModelForwarding:
+    active: true
+  ViewModelInjection:
+    active: true
+    viewModelFactories: 'viewModel,hiltViewModel,injectedViewModel,mavericksViewModel,tangleViewModel,koinViewModel'

@@ -26,6 +26,18 @@ import kotlin.time.Instant
 object SpacedRepetitionEngine {
     val REVIEW_INTERVALS_DAYS: List<Int> = listOf(1, 3, 7, 21, 60)
 
+    private const val DEFAULT_CONFIDENCE = 3
+    private const val FORGOT_CONFIDENCE = 2
+    private const val HARD_CONFIDENCE = 3
+    private const val GOOD_CONFIDENCE = 4
+    private const val EASY_CONFIDENCE = 5
+    private const val HARD_MAX_INTERVAL_DAYS = 3
+    private const val PACE_ROUNDING_SCALE = 10.0
+    private const val PERCENT_SCALE = 100.0
+    private const val MAX_PERCENT = 100
+    private const val DATE_PART_COUNT = 3
+    private const val ISO_DATE_PREFIX_LENGTH = 10
+
     fun computeNextReview(
         current: TopicProgress,
         rating: ReviewRating,
@@ -33,29 +45,29 @@ object SpacedRepetitionEngine {
     ): NextReviewResult {
         var nextStage = current.reviewStage
         var intervalDays = 1
-        var confidence = current.confidence ?: 3
+        var confidence = current.confidence ?: DEFAULT_CONFIDENCE
 
         when (rating) {
             ReviewRating.FORGOT -> {
                 nextStage = 1
                 intervalDays = 1
-                confidence = 2
+                confidence = FORGOT_CONFIDENCE
             }
             ReviewRating.HARD -> {
                 nextStage = maxOf(1, nextStage)
                 val stageInterval = REVIEW_INTERVALS_DAYS[(nextStage - 1).coerceIn(0, REVIEW_INTERVALS_DAYS.lastIndex)]
-                intervalDays = minOf(3, stageInterval)
-                confidence = 3
+                intervalDays = minOf(HARD_MAX_INTERVAL_DAYS, stageInterval)
+                confidence = HARD_CONFIDENCE
             }
             ReviewRating.GOOD -> {
                 nextStage = minOf(REVIEW_INTERVALS_DAYS.size, nextStage + 1)
                 intervalDays = REVIEW_INTERVALS_DAYS[nextStage - 1]
-                confidence = 4
+                confidence = GOOD_CONFIDENCE
             }
             ReviewRating.EASY -> {
                 nextStage = minOf(REVIEW_INTERVALS_DAYS.size, nextStage + 2)
                 intervalDays = REVIEW_INTERVALS_DAYS[nextStage - 1]
-                confidence = 5
+                confidence = EASY_CONFIDENCE
             }
         }
 
@@ -79,8 +91,8 @@ object SpacedRepetitionEngine {
         now: Instant = Clock.System.now(),
         timeZone: TimeZone = TimeZone.currentSystemDefault(),
     ): Int {
-        if (isoDate.isNullOrBlank()) return 0
-        val targetDate = parseIsoToLocalDate(isoDate, timeZone) ?: return 0
+        val targetDate = isoDate?.takeIf { it.isNotBlank() }?.let { parseIsoToLocalDate(it, timeZone) }
+            ?: return 0
         val today = now.toLocalDateTime(timeZone).date
         return targetDate.daysUntil(today)
     }
@@ -89,34 +101,32 @@ object SpacedRepetitionEngine {
         progress: TopicProgress?,
         now: Instant = Clock.System.now(),
         timeZone: TimeZone = TimeZone.currentSystemDefault(),
-    ): ReviewStatus {
-        if (progress == null || !progress.completed) {
-            return ReviewStatus(label = "Not started", isDue = false, isOverdue = false)
-        }
-        if (progress.flaggedForReview) {
-            return ReviewStatus(label = "Flagged for review", isDue = true, isOverdue = true)
-        }
-        if (progress.nextReviewAt.isNullOrBlank()) {
-            return ReviewStatus(label = "Scheduled", isDue = false, isOverdue = false)
-        }
-
-        val overdueDays = getDayDiffFromToday(progress.nextReviewAt, now, timeZone)
-        return when {
-            overdueDays > 0 -> ReviewStatus(
-                label = "Overdue ${overdueDays}d",
-                isDue = true,
-                isOverdue = true,
-            )
-            overdueDays == 0 -> ReviewStatus(
-                label = "Due today",
-                isDue = true,
-                isOverdue = false,
-            )
-            else -> ReviewStatus(
-                label = "Review in ${abs(overdueDays)}d",
-                isDue = false,
-                isOverdue = false,
-            )
+    ): ReviewStatus = when {
+        progress == null || !progress.completed ->
+            ReviewStatus(label = "Not started", isDue = false, isOverdue = false)
+        progress.flaggedForReview ->
+            ReviewStatus(label = "Flagged for review", isDue = true, isOverdue = true)
+        progress.nextReviewAt.isNullOrBlank() ->
+            ReviewStatus(label = "Scheduled", isDue = false, isOverdue = false)
+        else -> {
+            val overdueDays = getDayDiffFromToday(progress.nextReviewAt, now, timeZone)
+            when {
+                overdueDays > 0 -> ReviewStatus(
+                    label = "Overdue ${overdueDays}d",
+                    isDue = true,
+                    isOverdue = true,
+                )
+                overdueDays == 0 -> ReviewStatus(
+                    label = "Due today",
+                    isDue = true,
+                    isOverdue = false,
+                )
+                else -> ReviewStatus(
+                    label = "Review in ${abs(overdueDays)}d",
+                    isDue = false,
+                    isOverdue = false,
+                )
+            }
         }
     }
 
@@ -129,8 +139,8 @@ object SpacedRepetitionEngine {
         val upcoming = mutableListOf<ReviewDueItem>()
 
         for (entry in RoadmapCatalog.allSubtopics) {
-            val progress = topics[entry.subtopic.id] ?: continue
-            if (!progress.completed) continue
+            val progress = topics[entry.subtopic.id]
+            if (progress == null || !progress.completed) continue
 
             val daysOverdue = getDayDiffFromToday(progress.nextReviewAt, now, timeZone)
             val isFlagged = progress.flaggedForReview
@@ -214,12 +224,15 @@ object SpacedRepetitionEngine {
 
         val safeRemaining = remainingTopics.coerceAtLeast(0)
         val dailyPace = if (daysLeft > 0) {
-            ((safeRemaining.toDouble() / daysLeft) * 10.0).roundToInt() / 10.0
+            ((safeRemaining.toDouble() / daysLeft) * PACE_ROUNDING_SCALE).roundToInt() / PACE_ROUNDING_SCALE
         } else {
             safeRemaining.toDouble()
         }
 
-        val timeProgressPct = minOf(100, ((currentDay.toDouble() / safeTargetDays) * 100.0).roundToInt())
+        val timeProgressPct = minOf(
+            MAX_PERCENT,
+            ((currentDay.toDouble() / safeTargetDays) * PERCENT_SCALE).roundToInt(),
+        )
 
         return SprintCountdown(
             currentDay = currentDay,
@@ -231,17 +244,19 @@ object SpacedRepetitionEngine {
 
     fun parseLocalDate(dateStr: String): LocalDate? {
         val parts = dateStr.trim().split("-")
-        if (parts.size != 3) return null
-        val y = parts[0].toIntOrNull() ?: return null
-        val m = parts[1].toIntOrNull() ?: return null
-        val d = parts[2].toIntOrNull() ?: return null
-        return runCatching { LocalDate(y, m, d) }.getOrNull()
+        val parsedParts = if (parts.size == DATE_PART_COUNT) {
+            parts.mapNotNull { it.toIntOrNull() }.takeIf { it.size == DATE_PART_COUNT }
+        } else {
+            null
+        } ?: return null
+
+        return runCatching { LocalDate(parsedParts[0], parsedParts[1], parsedParts[2]) }.getOrNull()
     }
 
     private fun parseIsoToLocalDate(isoDate: String, timeZone: TimeZone): LocalDate? {
         runCatching { Instant.parse(isoDate) }.getOrNull()?.let { instant ->
             return instant.toLocalDateTime(timeZone).date
         }
-        return parseLocalDate(isoDate.take(10))
+        return parseLocalDate(isoDate.take(ISO_DATE_PREFIX_LENGTH))
     }
 }

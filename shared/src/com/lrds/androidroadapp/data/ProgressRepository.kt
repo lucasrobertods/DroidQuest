@@ -130,29 +130,43 @@ class ProgressRepository(
 
         scheduleSave()
 
-        return when {
-            willComplete && questAllDone && quest.isBoss -> MutationOutcome(
-                toastMessage = "BOSS DEFEATED! \"${quest.title}\" (+${subtopic.xp} XP)",
-                toastTone = ToastTone.AMBER,
-                celebrateQuest = true,
-                celebrateBoss = true,
-                hapticKind = HapticKind.CELEBRATION,
-            )
-            willComplete && questAllDone -> MutationOutcome(
-                toastMessage = "Quest Complete! \"${quest.title}\" (+${subtopic.xp} XP) — 1st review set for tomorrow!",
-                toastTone = ToastTone.EMERALD,
-                celebrateQuest = true,
-                hapticKind = HapticKind.CELEBRATION,
-            )
-            willComplete -> MutationOutcome(
-                toastMessage = "+${subtopic.xp} XP! Review reminder scheduled for tomorrow.",
-                toastTone = ToastTone.EMERALD,
-                hapticKind = HapticKind.SUCCESS,
-            )
-            else -> MutationOutcome(
-                hapticKind = HapticKind.LIGHT,
-            )
-        }
+        return buildToggleOutcome(
+            willComplete = willComplete,
+            questAllDone = questAllDone,
+            isBoss = quest.isBoss,
+            questTitle = quest.title,
+            subtopicXp = subtopic.xp,
+        )
+    }
+
+    private fun buildToggleOutcome(
+        willComplete: Boolean,
+        questAllDone: Boolean,
+        isBoss: Boolean,
+        questTitle: String,
+        subtopicXp: Int,
+    ): MutationOutcome = when {
+        willComplete && questAllDone && isBoss -> MutationOutcome(
+            toastMessage = "BOSS DEFEATED! \"$questTitle\" (+$subtopicXp XP)",
+            toastTone = ToastTone.AMBER,
+            celebrateQuest = true,
+            celebrateBoss = true,
+            hapticKind = HapticKind.CELEBRATION,
+        )
+        willComplete && questAllDone -> MutationOutcome(
+            toastMessage = "Quest Complete! \"$questTitle\" (+$subtopicXp XP) — 1st review set for tomorrow!",
+            toastTone = ToastTone.EMERALD,
+            celebrateQuest = true,
+            hapticKind = HapticKind.CELEBRATION,
+        )
+        willComplete -> MutationOutcome(
+            toastMessage = "+$subtopicXp XP! Review reminder scheduled for tomorrow.",
+            toastTone = ToastTone.EMERALD,
+            hapticKind = HapticKind.SUCCESS,
+        )
+        else -> MutationOutcome(
+            hapticKind = HapticKind.LIGHT,
+        )
     }
 
     fun recordReview(subtopicId: String, rating: ReviewRating): MutationOutcome {
@@ -165,7 +179,7 @@ class ProgressRepository(
         val tz = timeZoneProvider()
         val todayKey = RoadmapCatalog.getTodayKey(now, tz)
         val next = SpacedRepetitionEngine.computeNextReview(current, rating, now)
-        val reviewXp = if (rating == ReviewRating.FORGOT) 10 else 25
+        val reviewXp = if (rating == ReviewRating.FORGOT) REVIEW_XP_FORGOT else REVIEW_XP_RECALLED
 
         _state.update { prev ->
             val existing = prev.topics[subtopicId] ?: return@update prev
@@ -340,7 +354,7 @@ class ProgressRepository(
         _state.update { prev ->
             prev.copy(
                 dailyReminderEnabled = enabled,
-                reminderHour = hour.coerceIn(0, 23),
+                reminderHour = hour.coerceIn(0, MAX_REMINDER_HOUR),
                 lastUpdated = now.toString(),
             )
         }
@@ -394,5 +408,11 @@ class ProgressRepository(
             runCatching { storage.save(snapshot) }
             _saveStatus.value = storage.savedStatus
         }
+    }
+
+    private companion object {
+        const val REVIEW_XP_FORGOT = 10
+        const val REVIEW_XP_RECALLED = 25
+        const val MAX_REMINDER_HOUR = 23
     }
 }

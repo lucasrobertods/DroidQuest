@@ -60,6 +60,7 @@ import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
 import com.lrds.androidroadapp.domain.model.ZoneId
 import com.lrds.androidroadapp.presentation.ActiveTab
+import com.lrds.androidroadapp.presentation.StableList
 import com.lrds.androidroadapp.resources.Res
 import com.lrds.androidroadapp.resources.zone_1_emerald
 import com.lrds.androidroadapp.resources.zone_2_sapphire
@@ -135,7 +136,11 @@ fun PrimaryActionButton(
 ) {
     val spacing = DroidQuestTheme.spacing
     Surface(
-        color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+        color = if (enabled) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+        },
         contentColor = MaterialTheme.colorScheme.onPrimary,
         shape = shape,
         modifier = modifier
@@ -221,12 +226,14 @@ fun FloatingBottomNavBar(
         animationSpec = tween(durationMillis = motion.standardMs, easing = FastOutSlowInEasing),
     )
 
-    val destinations = listOf(
-        Triple(ActiveTab.TRAIL, "Trail", DroidQuestIcons.Map),
-        Triple(ActiveTab.CHECKLIST, "Checklist", DroidQuestIcons.ListChecks),
-        Triple(ActiveTab.REVIEWS, "Reviews", DroidQuestIcons.Brain),
-        Triple(ActiveTab.TROPHIES, "Trophies", DroidQuestIcons.Trophy),
-    )
+    val destinations = remember {
+        listOf(
+            Triple(ActiveTab.TRAIL, "Trail", DroidQuestIcons.Map),
+            Triple(ActiveTab.CHECKLIST, "Checklist", DroidQuestIcons.ListChecks),
+            Triple(ActiveTab.REVIEWS, "Reviews", DroidQuestIcons.Brain),
+            Triple(ActiveTab.TROPHIES, "Trophies", DroidQuestIcons.Trophy),
+        )
+    }
 
     Box(
         modifier = modifier
@@ -252,58 +259,84 @@ fun FloatingBottomNavBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 destinations.forEach { (tab, label, icon) ->
-                    val selected = activeTab == tab
-                    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    FloatingNavTabItem(
+                        label = label,
+                        icon = icon,
+                        selected = activeTab == tab,
+                        compact = compact,
+                        badgeCount = if (tab == ActiveTab.REVIEWS) dueReviewCount else 0,
+                        itemVerticalPadding = itemVerticalPadding,
+                        onClick = { onTabChange(tab) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(DroidQuestCornerShapes.FullPill)
-                            .clickable(role = Role.Tab) { onTabChange(tab) }
-                            .padding(vertical = itemVerticalPadding),
-                        contentAlignment = Alignment.Center,
+@Composable
+private fun FloatingNavTabItem(
+    label: String,
+    icon: ImageVector,
+    selected: Boolean,
+    compact: Boolean,
+    badgeCount: Int,
+    itemVerticalPadding: Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+    val motion = DroidQuestTheme.motion
+    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val badgeColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+
+    Box(
+        modifier = modifier
+            .clip(DroidQuestCornerShapes.FullPill)
+            .clickable(role = Role.Tab, onClick = onClick)
+            .padding(vertical = itemVerticalPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
+        ) {
+            Box(contentAlignment = Alignment.TopEnd) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = tint,
+                    modifier = Modifier.size(sizing.iconXl),
+                )
+                if (badgeCount > 0) {
+                    Surface(
+                        color = badgeColor,
+                        shape = CircleShape,
+                        modifier = Modifier.offset(x = spacing.md, y = -spacing.xs),
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
-                        ) {
-                            Box(contentAlignment = Alignment.TopEnd) {
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = label,
-                                    tint = tint,
-                                    modifier = Modifier.size(sizing.iconXl),
-                                )
-                                if (tab == ActiveTab.REVIEWS && dueReviewCount > 0) {
-                                    Surface(
-                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                        shape = CircleShape,
-                                        modifier = Modifier.offset(x = spacing.md, y = -spacing.xs),
-                                    ) {
-                                        Text(
-                                            text = if (dueReviewCount > 99) "99+" else dueReviewCount.toString(),
-                                            style = DroidQuestTheme.mono.micro,
-                                            color = MaterialTheme.colorScheme.background,
-                                            modifier = Modifier.padding(horizontal = spacing.xs, vertical = borders.hairline),
-                                        )
-                                    }
-                                }
-                            }
-                            AnimatedVisibility(
-                                visible = !compact,
-                                enter = fadeIn(tween(motion.fastMs)) + expandVertically(tween(motion.fastMs)),
-                                exit = fadeOut(tween(motion.fastMs)) + shrinkVertically(tween(motion.fastMs)),
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = tint,
-                                    maxLines = 1,
-                                )
-                            }
-                        }
+                        Text(
+                            text = if (badgeCount > MAX_BADGE_DISPLAY_COUNT) "99+" else badgeCount.toString(),
+                            style = DroidQuestTheme.mono.micro,
+                            color = MaterialTheme.colorScheme.background,
+                            modifier = Modifier.padding(horizontal = spacing.xs, vertical = borders.hairline),
+                        )
                     }
                 }
+            }
+            AnimatedVisibility(
+                visible = !compact,
+                enter = fadeIn(tween(motion.fastMs)) + expandVertically(tween(motion.fastMs)),
+                exit = fadeOut(tween(motion.fastMs)) + shrinkVertically(tween(motion.fastMs)),
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = tint,
+                    maxLines = 1,
+                )
             }
         }
     }
@@ -338,12 +371,17 @@ fun Tactile3DButton(
         targetValue = if (pressed && enabled && ledgeHeight > 0.dp) borders.hairline else 0.dp,
         animationSpec = tween(durationMillis = motion.pressMs),
     )
+    val effectiveBorder = when {
+        borderColor != Color.Transparent -> BorderStroke(borders.hairline, borderColor)
+        ledgeHeight > 0.dp -> BorderStroke(borders.hairline, ledgeColor)
+        else -> null
+    }
 
     Surface(
         color = if (enabled) containerColor else containerColor.copy(alpha = 0.5f),
         contentColor = contentColor,
         shape = shape,
-        border = if (borderColor != Color.Transparent) BorderStroke(borders.hairline, borderColor) else null,
+        border = effectiveBorder,
         modifier = modifier
             .offset(y = pressOffset)
             .clip(shape)
@@ -367,26 +405,31 @@ fun Tactile3DButton(
 @Composable
 fun GradientProgressBar(
     progress: Float,
-    colors: List<Color>,
+    colors: StableList<Color>,
     modifier: Modifier = Modifier,
     trackColor: Color = MaterialTheme.colorScheme.surfaceContainerLowest,
     borderColor: Color = Color.Transparent,
     height: Dp = DroidQuestTheme.sizing.progressBarStandard,
     minVisibleFraction: Float = 0.03f,
 ) {
+    val borders = DroidQuestTheme.borders
     val motion = DroidQuestTheme.motion
     val clamped = progress.coerceIn(0f, 1f)
     val animated by animateFloatAsState(
         targetValue = if (clamped > 0f) maxOf(clamped, minVisibleFraction) else 0f,
         animationSpec = tween(durationMillis = motion.progressMs, easing = FastOutSlowInEasing),
     )
+    val fallbackBrush = Brush.horizontalGradient(
+        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)
+    )
 
-    Box(
+    Surface(
+        color = trackColor,
+        shape = DroidQuestCornerShapes.FullPill,
+        border = if (borderColor != Color.Transparent) BorderStroke(borders.hairline, borderColor) else null,
         modifier = modifier
             .fillMaxWidth()
-            .height(height)
-            .clip(DroidQuestCornerShapes.FullPill)
-            .background(trackColor),
+            .height(height),
     ) {
         if (animated > 0f) {
             Box(
@@ -395,8 +438,7 @@ fun GradientProgressBar(
                     .fillMaxWidth(animated)
                     .clip(DroidQuestCornerShapes.FullPill)
                     .background(
-                        if (colors.size >= 2) Brush.horizontalGradient(colors)
-                        else Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary))
+                        if (colors.size >= 2) Brush.horizontalGradient(colors) else fallbackBrush
                     ),
             )
         }
@@ -444,6 +486,13 @@ fun MicroPill(
     }
 }
 
+private const val MAX_BADGE_DISPLAY_COUNT = 99
+private const val CONFETTI_BOSS_COUNT = 56
+private const val CONFETTI_DEFAULT_COUNT = 32
+private const val CONFETTI_ORIGIN_X_FRACTION = 0.5f
+private const val CONFETTI_ORIGIN_Y_FRACTION = 0.35f
+private const val CONFETTI_GRAVITY_PX = 420f
+
 private data class ConfettiParticle(
     val angleRad: Float,
     val speed: Float,
@@ -471,7 +520,8 @@ fun CelebrationConfettiOverlay(
             primary.copy(alpha = 0.55f),
             onSurface.copy(alpha = 0.75f),
         )
-        List(if (isBoss) 56 else 32) {
+        val count = if (isBoss) CONFETTI_BOSS_COUNT else CONFETTI_DEFAULT_COUNT
+        List(count) {
             ConfettiParticle(
                 angleRad = (rng.nextFloat() * 2f * PI).toFloat(),
                 speed = 180f + rng.nextFloat() * 400f,
@@ -490,11 +540,14 @@ fun CelebrationConfettiOverlay(
     val t = progress.value
     if (t < 1f) {
         Canvas(modifier = modifier.fillMaxSize()) {
-            val origin = Offset(size.width * 0.5f, size.height * 0.35f)
+            val origin = Offset(
+                x = size.width * CONFETTI_ORIGIN_X_FRACTION,
+                y = size.height * CONFETTI_ORIGIN_Y_FRACTION,
+            )
             val alpha = (1f - t).coerceIn(0f, 1f)
             for (p in particles) {
                 val x = origin.x + cos(p.angleRad) * p.speed * t + p.drift * t * t
-                val y = origin.y + sin(p.angleRad) * p.speed * t + 420f * t * t
+                val y = origin.y + sin(p.angleRad) * p.speed * t + CONFETTI_GRAVITY_PX * t * t
                 drawCircle(
                     color = p.color.copy(alpha = alpha),
                     radius = p.radius * (1f - 0.35f * t),

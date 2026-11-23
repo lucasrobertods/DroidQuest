@@ -25,8 +25,10 @@ A mobile-first **Kotlin Multiplatform + Compose Multiplatform** study companion 
 - **WebAssembly tests:** `./kotlin test -m shared -p wasmJs`
 - **All platforms:** `./kotlin test`
 
-## Security Hooks
-Enable the repository's versioned Gitleaks pre-commit hook after cloning:
+## Security Hooks & Static Analysis
+- **Detekt + Compose Rules (`config/detekt/detekt.yml`):** `./scripts/detekt.sh` (exports SARIF to `build/reports/detekt/detekt.sarif`)
+- **Semgrep SAST (`config/semgrep/android-kotlin.yml` + Kotlin, Android & OWASP packs):** runs automatically in [`.github/workflows/static-analysis.yml`](.github/workflows/static-analysis.yml) and uploads SARIF to GitHub Code Scanning.
+- **Gitleaks pre-commit hook:** enable after cloning:
 ```bash
 git config core.hooksPath .githooks
 ```

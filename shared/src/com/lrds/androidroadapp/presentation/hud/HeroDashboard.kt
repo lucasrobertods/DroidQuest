@@ -31,6 +31,10 @@ import com.lrds.androidroadapp.domain.model.QuestModule
 import com.lrds.androidroadapp.domain.model.ReviewDueItem
 import com.lrds.androidroadapp.domain.model.TopicProgress
 import com.lrds.androidroadapp.presentation.ActiveTab
+import com.lrds.androidroadapp.presentation.StableList
+import com.lrds.androidroadapp.presentation.StableMap
+
+private const val WIDE_READINESS_WEIGHT = 1.2f
 
 @Composable
 fun HeroDashboard(
@@ -39,9 +43,9 @@ fun HeroDashboard(
     overallPct: Int,
     daysLeft: Int,
     dailyPace: Double,
-    pillarStats: List<PillarStat>,
+    pillarStats: StableList<PillarStat>,
     nextRecommendedQuest: QuestModule?,
-    topics: Map<String, TopicProgress>,
+    topics: StableMap<String, TopicProgress>,
     topDueReview: ReviewDueItem?,
     dueReviewCount: Int,
     onTabChange: (ActiveTab) -> Unit,
@@ -76,7 +80,7 @@ fun HeroDashboard(
                         daysLeft = daysLeft,
                         dailyPace = dailyPace,
                         pillarStats = pillarStats,
-                        modifier = Modifier.weight(1.2f),
+                        modifier = Modifier.weight(WIDE_READINESS_WEIGHT),
                     )
                     Column(
                         modifier = Modifier.weight(1f),
@@ -133,7 +137,7 @@ private fun HeroReadinessCard(
     overallPct: Int,
     daysLeft: Int,
     dailyPace: Double,
-    pillarStats: List<PillarStat>,
+    pillarStats: StableList<PillarStat>,
     modifier: Modifier = Modifier,
 ) {
     val spacing = DroidQuestTheme.spacing
@@ -191,46 +195,54 @@ private fun HeroReadinessCard(
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(spacing.base),
+            HeroPillarBreakdownRow(pillarStats = pillarStats)
+        }
+    }
+}
+
+@Composable
+private fun HeroPillarBreakdownRow(pillarStats: StableList<PillarStat>) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.base),
+    ) {
+        pillarStats.forEach { stat ->
+            val shortName = when (stat.pillar) {
+                PillarId.ANDROID -> "Android"
+                PillarId.DSA -> "DSA"
+                PillarId.SYSTEM_DESIGN -> "Sys Des"
+                PillarId.CAREER -> "Career"
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
-                pillarStats.forEach { stat ->
-                    val shortName = when (stat.pillar) {
-                        PillarId.ANDROID -> "Android"
-                        PillarId.DSA -> "DSA"
-                        PillarId.SYSTEM_DESIGN -> "Sys Des"
-                        PillarId.CAREER -> "Career"
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(spacing.sm),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = shortName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = "${stat.pct}%",
-                                style = DroidQuestTheme.mono.micro,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                        CalmProgressBar(
-                            progress = stat.pct / 100f,
-                            height = sizing.progressBarThin,
-                            minVisibleFraction = if (stat.done > 0) 0.08f else 0f,
-                        )
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = shortName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "${stat.pct}%",
+                        style = DroidQuestTheme.mono.micro,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
+                CalmProgressBar(
+                    progress = stat.pct / 100f,
+                    height = sizing.progressBarThin,
+                    minVisibleFraction = if (stat.done > 0) 0.08f else 0f,
+                )
             }
         }
     }
@@ -312,7 +324,7 @@ private fun ReviewsDueRowCard(
 @Composable
 private fun NextQuestActionCard(
     quest: QuestModule,
-    topics: Map<String, TopicProgress>,
+    topics: StableMap<String, TopicProgress>,
     onSelectQuest: (String) -> Unit,
 ) {
     val spacing = DroidQuestTheme.spacing
