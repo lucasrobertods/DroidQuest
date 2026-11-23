@@ -112,11 +112,21 @@ class SpacedRepetitionEngineTest {
     fun `buildReviewQueues sorts flagged first, then most overdue, and closest upcoming first`() {
         val topics = mapOf(
             "af-1-os-art" to TopicProgress(completed = true, nextReviewAt = (fixedNow - 1.days).toString()),
-            "af-2-context-process-death" to TopicProgress(completed = true, nextReviewAt = (fixedNow - 5.days).toString()),
-            "af-3-gradle-basics" to TopicProgress(completed = true, nextReviewAt = (fixedNow + 10.days).toString(), flaggedForReview = true),
+            "af-2-context-process-death" to TopicProgress(
+                completed = true,
+                nextReviewAt = (fixedNow - 5.days).toString(),
+            ),
+            "af-3-gradle-basics" to TopicProgress(
+                completed = true,
+                nextReviewAt = (fixedNow + 10.days).toString(),
+                flaggedForReview = true,
+            ),
             "kt-1-inline-reified" to TopicProgress(completed = true, nextReviewAt = (fixedNow + 7.days).toString()),
             "kt-2-types-delegation" to TopicProgress(completed = true, nextReviewAt = (fixedNow + 2.days).toString()),
-            "kt-3-generics-sequences" to TopicProgress(completed = false, nextReviewAt = (fixedNow - 2.days).toString()),
+            "kt-3-generics-sequences" to TopicProgress(
+                completed = false,
+                nextReviewAt = (fixedNow - 2.days).toString(),
+            ),
         )
 
         val queues = SpacedRepetitionEngine.buildReviewQueues(topics, fixedNow, utc)

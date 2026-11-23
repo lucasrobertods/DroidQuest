@@ -54,95 +54,51 @@ fun rememberMonoFontFamily(): FontFamily = FontFamily(
 fun droidQuestTypography(): Typography {
     val display = rememberDisplayFontFamily()
     val body = rememberBodyFontFamily()
+    return buildDroidQuestTypography(display = display, body = body)
+}
 
-    return Typography(
-        displaySmall = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 32.sp,
-            lineHeight = 36.sp,
-            letterSpacing = (-0.6).sp,
-        ),
-        headlineLarge = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
-            lineHeight = 30.sp,
-            letterSpacing = (-0.4).sp,
-        ),
-        headlineMedium = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            lineHeight = 26.sp,
-            letterSpacing = (-0.3).sp,
-        ),
-        headlineSmall = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            lineHeight = 24.sp,
-            letterSpacing = (-0.2).sp,
-        ),
-        titleLarge = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
-            letterSpacing = (-0.15).sp,
-        ),
-        titleMedium = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
-            letterSpacing = (-0.1).sp,
-        ),
-        titleSmall = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp,
-            lineHeight = 18.sp,
-        ),
-        bodyLarge = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-        ),
-        bodyMedium = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.Normal,
-            fontSize = 13.sp,
-            lineHeight = 19.sp,
-        ),
-        bodySmall = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.Normal,
-            fontSize = 12.sp,
-            lineHeight = 17.sp,
-        ),
-        labelLarge = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp,
-            lineHeight = 16.sp,
-            letterSpacing = 0.sp,
-        ),
-        labelMedium = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
-            letterSpacing = 0.3.sp,
-        ),
-        labelSmall = TextStyle(
-            fontFamily = body,
-            fontWeight = FontWeight.Bold,
-            fontSize = 10.sp,
-            lineHeight = 13.sp,
-            letterSpacing = 0.7.sp,
-        ),
+private fun buildDroidQuestTypography(display: FontFamily, body: FontFamily): Typography = Typography(
+    displaySmall = textStyle(
+        fontFamily = display,
+        fontWeight = FontWeight.ExtraBold,
+        fontSizeSp = 32,
+        lineHeightSp = 36,
+        letterSpacingSp = -0.6f,
+    ),
+    headlineLarge = textStyle(display, FontWeight.Bold, fontSizeSp = 24, lineHeightSp = 30, letterSpacingSp = -0.4f),
+    headlineMedium = textStyle(display, FontWeight.Bold, fontSizeSp = 20, lineHeightSp = 26, letterSpacingSp = -0.3f),
+    headlineSmall = textStyle(display, FontWeight.Bold, fontSizeSp = 18, lineHeightSp = 24, letterSpacingSp = -0.2f),
+    titleLarge = textStyle(display, FontWeight.Bold, fontSizeSp = 16, lineHeightSp = 22, letterSpacingSp = -0.15f),
+    titleMedium = textStyle(body, FontWeight.Bold, fontSizeSp = 15, lineHeightSp = 20, letterSpacingSp = -0.1f),
+    titleSmall = textStyle(body, FontWeight.Bold, fontSizeSp = 13, lineHeightSp = 18),
+    bodyLarge = textStyle(body, FontWeight.SemiBold, fontSizeSp = 14, lineHeightSp = 20),
+    bodyMedium = textStyle(body, FontWeight.Normal, fontSizeSp = 13, lineHeightSp = 19),
+    bodySmall = textStyle(body, FontWeight.Normal, fontSizeSp = 12, lineHeightSp = 17),
+    labelLarge = textStyle(body, FontWeight.Bold, fontSizeSp = 13, lineHeightSp = 16, letterSpacingSp = 0f),
+    labelMedium = textStyle(body, FontWeight.SemiBold, fontSizeSp = 11, lineHeightSp = 14, letterSpacingSp = 0.3f),
+    labelSmall = textStyle(body, FontWeight.Bold, fontSizeSp = 10, lineHeightSp = 13, letterSpacingSp = 0.7f),
+)
+
+private fun textStyle(
+    fontFamily: FontFamily,
+    fontWeight: FontWeight,
+    fontSizeSp: Int,
+    lineHeightSp: Int,
+    letterSpacingSp: Float? = null,
+): TextStyle = if (letterSpacingSp != null) {
+    TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = fontWeight,
+        fontSize = fontSizeSp.sp,
+        lineHeight = lineHeightSp.sp,
+        letterSpacing = letterSpacingSp.sp,
+    )
+} else {
+    TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = fontWeight,
+        fontSize = fontSizeSp.sp,
+        lineHeight = lineHeightSp.sp,
     )
 }
 

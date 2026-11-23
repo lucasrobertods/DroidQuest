@@ -5,10 +5,12 @@ import com.lrds.androidroadapp.domain.model.UserProgressState
 import kotlin.js.ExperimentalWasmJsInterop
 
 @OptIn(ExperimentalWasmJsInterop::class)
+@Suppress("UnusedParameter") // Referenced inside Kotlin/Wasm js() snippet
 private fun jsGetLocalStorage(key: String): String? =
     js("typeof globalThis.localStorage !== 'undefined' ? globalThis.localStorage.getItem(key) : null")
 
 @OptIn(ExperimentalWasmJsInterop::class)
+@Suppress("UnusedParameter") // Referenced inside Kotlin/Wasm js() snippet
 private fun jsSetLocalStorage(key: String, value: String) {
     js("if (typeof globalThis.localStorage !== 'undefined') { globalThis.localStorage.setItem(key, value); }")
 }

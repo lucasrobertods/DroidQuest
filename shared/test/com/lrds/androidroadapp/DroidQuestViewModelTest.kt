@@ -96,7 +96,8 @@ class DroidQuestViewModelTest {
     }
 
     @Test
-    fun `completing topic and recording review updates XP, stage, and review queues via Turbine`() = runTest(testDispatcher) {
+    fun `completing topic and recording review updates XP, stage, and review queues via Turbine`() =
+        runTest(testDispatcher) {
         val storage = FakeProgressStorage()
         val bridge = FakePlatformBridge()
         val repo = ProgressRepository(
@@ -150,7 +151,8 @@ class DroidQuestViewModelTest {
     }
 
     @Test
-    fun `high yield toggle, quest notes, custom links, start date, and JSON import work cleanly`() = runTest(testDispatcher) {
+    fun `high yield toggle, quest notes, custom links, start date, and JSON import work cleanly`() =
+        runTest(testDispatcher) {
         val storage = FakeProgressStorage()
         val bridge = FakePlatformBridge()
         val repo = ProgressRepository(

@@ -36,15 +36,16 @@ import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
 import com.lrds.androidroadapp.domain.model.RankInfo
-import com.lrds.androidroadapp.domain.model.SaveStatus
 import com.lrds.androidroadapp.presentation.ActiveTab
+
+private const val THOUSANDS_GROUP_SIZE = 3
 
 fun formatXpNumber(xp: Int): String {
     val negative = xp < 0
     val digits = kotlin.math.abs(xp).toString()
     val grouped = buildString {
         digits.forEachIndexed { idx, ch ->
-            if (idx > 0 && (digits.length - idx) % 3 == 0) append(',')
+            if (idx > 0 && (digits.length - idx) % THOUSANDS_GROUP_SIZE == 0) append(',')
             append(ch)
         }
     }
@@ -59,7 +60,6 @@ fun TopHud(
     currentDay: Int,
     targetDays: Int,
     dueReviewCount: Int,
-    saveStatus: SaveStatus,
     soundEnabled: Boolean,
     isDarkTheme: Boolean,
     activeTab: ActiveTab,
@@ -71,10 +71,8 @@ fun TopHud(
     onGoHome: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val ext = DroidQuestTheme.colors
     val spacing = DroidQuestTheme.spacing
     val sizing = DroidQuestTheme.sizing
-    val borders = DroidQuestTheme.borders
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -98,50 +96,11 @@ fun TopHud(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(spacing.base),
-                            modifier = Modifier
-                                .weight(1f, fill = false)
-                                .clip(DroidQuestCornerShapes.HudPill)
-                                .clickable(onClick = onGoHome)
-                                .padding(end = spacing.sm),
-                        ) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceContainer,
-                                shape = DroidQuestCornerShapes.TactileButton,
-                                border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
-                                modifier = Modifier.size(sizing.appBadgeSize),
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = DroidQuestIcons.Terminal,
-                                        contentDescription = "DroidQuest",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(sizing.iconMd),
-                                    )
-                                }
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(spacing.md),
-                            ) {
-                                Text(
-                                    text = "DroidQuest",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                )
-                                Text(
-                                    text = "Lv.${rankInfo.current.level} · ${rankInfo.current.title}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
+                        TopHudBrandHeader(
+                            rankInfo = rankInfo,
+                            onGoHome = onGoHome,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
 
                         if (isWide) {
                             DesktopTabBar(
@@ -151,62 +110,156 @@ fun TopHud(
                             )
                         }
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            HudGhostIconButton(
-                                icon = if (isDarkTheme) DroidQuestIcons.Sun else DroidQuestIcons.Moon,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
-                                onClick = onToggleTheme,
-                            )
-                            HudGhostIconButton(
-                                icon = if (soundEnabled) DroidQuestIcons.Volume2 else DroidQuestIcons.VolumeX,
-                                tint = if (soundEnabled) MaterialTheme.colorScheme.onSurfaceVariant else ext.inkSubtle,
-                                contentDescription = if (soundEnabled) "Mute effects" else "Enable effects",
-                                onClick = onToggleSound,
-                            )
-                            HudGhostIconButton(
-                                icon = DroidQuestIcons.Settings,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                contentDescription = "Settings & Backup",
-                                onClick = onOpenSettings,
-                            )
-                        }
+                        TopHudActionButtons(
+                            soundEnabled = soundEnabled,
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = onToggleTheme,
+                            onToggleSound = onToggleSound,
+                            onOpenSettings = onOpenSettings,
+                        )
                     }
 
-                    val motion = DroidQuestTheme.motion
-                    AnimatedVisibility(
+                    TopHudTelemetryStrip(
                         visible = showTelemetryStrip,
-                        enter = fadeIn(tween(motion.fastMs)) + expandVertically(tween(motion.standardMs)),
-                        exit = fadeOut(tween(motion.fastMs)) + shrinkVertically(tween(motion.standardMs)),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            TelemetryPill(
-                                icon = DroidQuestIcons.CalendarClock,
-                                label = "Day $currentDay/$targetDays",
-                                modifier = Modifier.weight(1f),
-                            )
-                            TelemetryPill(
-                                icon = DroidQuestIcons.Flame,
-                                label = "${streak}d streak",
-                                modifier = Modifier.weight(1f),
-                            )
-                            TelemetryPill(
-                                icon = DroidQuestIcons.Zap,
-                                label = "${formatXpNumber(totalXp)} XP",
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
+                        currentDay = currentDay,
+                        targetDays = targetDays,
+                        streak = streak,
+                        totalXp = totalXp,
+                    )
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        }
+    }
+}
+
+@Composable
+private fun TopHudBrandHeader(
+    rankInfo: RankInfo,
+    onGoHome: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.base),
+        modifier = modifier
+            .clip(DroidQuestCornerShapes.HudPill)
+            .clickable(onClick = onGoHome)
+            .padding(end = spacing.sm),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = DroidQuestCornerShapes.TactileButton,
+            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
+            modifier = Modifier.size(sizing.appBadgeSize),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = DroidQuestIcons.Terminal,
+                    contentDescription = "DroidQuest",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(sizing.iconMd),
+                )
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+        ) {
+            Text(
+                text = "DroidQuest",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            Text(
+                text = "Lv.${rankInfo.current.level} · ${rankInfo.current.title}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopHudActionButtons(
+    soundEnabled: Boolean,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
+    onToggleSound: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    val ext = DroidQuestTheme.colors
+    val spacing = DroidQuestTheme.spacing
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HudGhostIconButton(
+            icon = if (isDarkTheme) DroidQuestIcons.Sun else DroidQuestIcons.Moon,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
+            onClick = onToggleTheme,
+        )
+        HudGhostIconButton(
+            icon = if (soundEnabled) DroidQuestIcons.Volume2 else DroidQuestIcons.VolumeX,
+            tint = if (soundEnabled) MaterialTheme.colorScheme.onSurfaceVariant else ext.inkSubtle,
+            contentDescription = if (soundEnabled) "Mute effects" else "Enable effects",
+            onClick = onToggleSound,
+        )
+        HudGhostIconButton(
+            icon = DroidQuestIcons.Settings,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            contentDescription = "Settings & Backup",
+            onClick = onOpenSettings,
+        )
+    }
+}
+
+@Composable
+private fun TopHudTelemetryStrip(
+    visible: Boolean,
+    currentDay: Int,
+    targetDays: Int,
+    streak: Int,
+    totalXp: Int,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val motion = DroidQuestTheme.motion
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(motion.fastMs)) + expandVertically(tween(motion.standardMs)),
+        exit = fadeOut(tween(motion.fastMs)) + shrinkVertically(tween(motion.standardMs)),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TelemetryPill(
+                icon = DroidQuestIcons.CalendarClock,
+                label = "Day $currentDay/$targetDays",
+                modifier = Modifier.weight(1f),
+            )
+            TelemetryPill(
+                icon = DroidQuestIcons.Flame,
+                label = "${streak}d streak",
+                modifier = Modifier.weight(1f),
+            )
+            TelemetryPill(
+                icon = DroidQuestIcons.Zap,
+                label = "${formatXpNumber(totalXp)} XP",
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
@@ -276,12 +329,16 @@ private fun DesktopTabBar(
         ) {
             tabs.forEach { (tab, label) ->
                 val selected = activeTab == tab
+                val textColor = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
                 Box(
                     modifier = Modifier
                         .clip(DroidQuestCornerShapes.FullPill)
                         .background(
-                            if (selected) MaterialTheme.colorScheme.surfaceContainerHighest
-                            else Color.Transparent
+                            if (selected) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent
                         )
                         .clickable { onSelectTab(tab) }
                         .padding(horizontal = spacing.lg, vertical = spacing.sm),
@@ -289,7 +346,7 @@ private fun DesktopTabBar(
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelLarge,
-                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = textColor,
                     )
                 }
             }

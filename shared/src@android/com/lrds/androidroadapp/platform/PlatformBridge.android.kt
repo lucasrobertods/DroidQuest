@@ -16,7 +16,9 @@ import java.util.Calendar
 object AndroidPlatformHost {
     private var appContext: Context? = null
 
-    var onExportDocumentRequested: ((fileName: String, content: String, onResult: (Boolean, String) -> Unit) -> Unit)? = null
+    var onExportDocumentRequested: (
+        (fileName: String, content: String, onResult: (Boolean, String) -> Unit) -> Unit
+    )? = null
     var onOpenDocumentRequested: ((onPicked: (String?) -> Unit) -> Unit)? = null
     var onRequestNotificationPermission: ((onGranted: (Boolean) -> Unit) -> Unit)? = null
 
@@ -25,7 +27,8 @@ object AndroidPlatformHost {
     }
 
     fun requireAppContext(): Context = requireNotNull(appContext) {
-        "AndroidPlatformHost.init(context) must be called in MainActivity.onCreate() before accessing Room or PlatformBridge."
+        "AndroidPlatformHost.init(context) must be called in MainActivity.onCreate() " +
+            "before accessing Room or PlatformBridge."
     }
 }
 
@@ -123,7 +126,9 @@ private class AndroidPlatformBridge : PlatformBridge {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         runCatching {
-            ctx.startActivity(Intent.createChooser(share, "Export DroidQuest Backup").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            val chooser = Intent.createChooser(share, "Export DroidQuest Backup")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            ctx.startActivity(chooser)
             onResult(true, "Opened share sheet for $fileName")
         }.onFailure {
             onResult(false, "Could not export backup JSON.")
@@ -200,7 +205,7 @@ private class AndroidPlatformBridge : PlatformBridge {
             ReviewReminderReceiver.ensureChannel(notifManager)
         }
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
+            set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, MAX_REMINDER_HOUR))
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             if (timeInMillis <= System.currentTimeMillis()) {
@@ -213,6 +218,10 @@ private class AndroidPlatformBridge : PlatformBridge {
             AlarmManager.INTERVAL_DAY,
             pendingIntent,
         )
+    }
+
+    private companion object {
+        const val MAX_REMINDER_HOUR = 23
     }
 }
 
