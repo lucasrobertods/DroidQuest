@@ -710,6 +710,8 @@ private fun AnimatedSettingsOverlay(
             onImportJsonRaw = { raw -> onIntent(DroidQuestIntent.ImportBackupJsonRaw(raw)) },
             onGetCurrentJson = onGetCurrentJson,
             onReset = { onIntent(DroidQuestIntent.ResetProgress) },
+            appLanguage = state.progress.appLanguage,
+            onSetAppLanguage = { onIntent(DroidQuestIntent.SetAppLanguage(it)) },
         )
     }
 }

@@ -46,6 +46,14 @@ enum class ThemeMode {
 }
 
 @Serializable
+enum class AppLanguage(val label: String) {
+    @SerialName("system") SYSTEM("System"),
+    @SerialName("en") EN("EN"),
+    @SerialName("pt-BR") PT_BR("PT-BR"),
+    @SerialName("es") ES("ES"),
+}
+
+@Serializable
 data class StudyResource(
     val id: String,
     val title: String,
@@ -148,6 +156,7 @@ data class UserProgressState(
     val targetDays: Int = 100,
     val soundEnabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val dailyReminderEnabled: Boolean = false,
     val reminderHour: Int = 20,
     val studyReminderEnabled: Boolean = false,

@@ -12,6 +12,7 @@ data class MissionConfigEntity(
     val targetDays: Int,
     val soundEnabled: Boolean,
     val themeMode: String = "SYSTEM",
+    val appLanguage: String = "SYSTEM",
     val dailyReminderEnabled: Boolean,
     val reminderHour: Int,
     val studyReminderEnabled: Boolean = false,

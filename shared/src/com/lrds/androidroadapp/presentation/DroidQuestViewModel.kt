@@ -8,6 +8,7 @@ import com.lrds.androidroadapp.data.ProgressRepository
 import com.lrds.androidroadapp.data.ToastTone
 import com.lrds.androidroadapp.domain.curriculum.RoadmapCatalog
 import com.lrds.androidroadapp.domain.engine.SpacedRepetitionEngine
+import com.lrds.androidroadapp.domain.model.AppLanguage
 import com.lrds.androidroadapp.domain.model.PillarId
 import com.lrds.androidroadapp.domain.model.PillarStat
 import com.lrds.androidroadapp.domain.model.QuestModule
@@ -135,6 +136,7 @@ sealed interface DroidQuestIntent {
     data class UpdateStartDate(val startDate: String) : DroidQuestIntent
     data object ToggleSound : DroidQuestIntent
     data class SetThemeMode(val mode: ThemeMode) : DroidQuestIntent
+    data class SetAppLanguage(val language: AppLanguage) : DroidQuestIntent
     data class SetDailyReminder(val enabled: Boolean, val hour: Int) : DroidQuestIntent
     data class SetStudySchedule(
         val enabled: Boolean,
@@ -254,6 +256,7 @@ class DroidQuestViewModel(
             is DroidQuestIntent.UpdateStartDate -> applyOutcome(repository.updateStartDate(intent.startDate))
             DroidQuestIntent.ToggleSound -> applyOutcome(repository.toggleSound())
             is DroidQuestIntent.SetThemeMode -> applyOutcome(repository.setThemeMode(intent.mode))
+            is DroidQuestIntent.SetAppLanguage -> applyOutcome(repository.setAppLanguage(intent.language))
             is DroidQuestIntent.SetDailyReminder -> handleSetDailyReminder(intent.enabled, intent.hour)
             is DroidQuestIntent.SetStudySchedule -> handleSetStudySchedule(intent)
             is DroidQuestIntent.OpenExternalUrl -> platformBridge.openUrl(intent.url)

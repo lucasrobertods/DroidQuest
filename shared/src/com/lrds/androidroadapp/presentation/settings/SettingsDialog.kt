@@ -47,6 +47,7 @@ import com.lrds.androidroadapp.designsystem.components.SecondaryTonalButton
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
+import com.lrds.androidroadapp.domain.model.AppLanguage
 import com.lrds.androidroadapp.domain.model.SaveStatus
 import com.lrds.androidroadapp.domain.model.StudySchedule
 import com.lrds.androidroadapp.domain.model.ThemeMode
@@ -93,6 +94,8 @@ fun SettingsDialog(
     onGetCurrentJson: () -> String,
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
+    appLanguage: AppLanguage = AppLanguage.SYSTEM,
+    onSetAppLanguage: (AppLanguage) -> Unit = {},
 ) {
     val spacing = DroidQuestTheme.spacing
     val sizing = DroidQuestTheme.sizing
@@ -132,6 +135,11 @@ fun SettingsDialog(
                     AppearanceSection(
                         themeMode = themeMode,
                         onSetThemeMode = onSetThemeMode,
+                    )
+
+                    LanguageSection(
+                        appLanguage = appLanguage,
+                        onSetAppLanguage = onSetAppLanguage,
                     )
 
                     SprintStartDateSection(
@@ -279,6 +287,77 @@ private fun AppearanceSection(
                     ) {
                         Text(
                             text = label,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = textColor,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageSection(
+    appLanguage: AppLanguage,
+    onSetAppLanguage: (AppLanguage) -> Unit,
+) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "LANGUAGE",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "APP LOCALE",
+                style = DroidQuestTheme.mono.micro,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+        ) {
+            AppLanguage.entries.forEach { language ->
+                val selected = appLanguage == language
+                val bgColor = if (selected) {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainer
+                }
+                val borderColor = if (selected) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_THEME_BORDER_ALPHA)
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                }
+                val textColor = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Surface(
+                    color = bgColor,
+                    shape = DroidQuestCornerShapes.TactileButton,
+                    border = BorderStroke(borders.hairline, borderColor),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(DroidQuestCornerShapes.TactileButton)
+                        .clickable { onSetAppLanguage(language) },
+                ) {
+                    Box(
+                        modifier = Modifier.padding(vertical = spacing.base),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = language.label,
                             style = MaterialTheme.typography.labelLarge,
                             color = textColor,
                         )
