@@ -32,9 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.components.CalmProgressBar
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
@@ -58,6 +58,9 @@ fun ChecklistContent(
     onSelectQuest: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     var search by remember { mutableStateOf("") }
     var pillarFilter by remember { mutableStateOf<PillarId?>(null) }
     var statusFilter by remember { mutableStateOf(ChecklistStatusFilter.ALL) }
@@ -96,14 +99,13 @@ fun ChecklistContent(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = spacing.screenHorizontal),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.widthIn(max = 1040.dp).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.widthIn(max = sizing.maxContentWidth).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.xl),
         ) {
-            // Recessed Dark Search Bar
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
@@ -118,7 +120,7 @@ fun ChecklistContent(
                         imageVector = DroidQuestIcons.Search,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(sizing.iconLg),
                     )
                 },
                 trailingIcon = if (search.isNotEmpty()) {
@@ -128,7 +130,7 @@ fun ChecklistContent(
                             contentDescription = "Clear search",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(sizing.iconMd)
                                 .clickable { search = "" },
                         )
                     }
@@ -141,12 +143,11 @@ fun ChecklistContent(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            // Monochrome Status & High-Yield Filter Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val statuses = listOf(
@@ -169,12 +170,11 @@ fun ChecklistContent(
                 )
             }
 
-            // Quiet Pillar Filter Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 QuietPillarTab(
@@ -197,7 +197,6 @@ fun ChecklistContent(
                 }
             }
 
-            // Collapsible Monochrome Zone Sections
             RoadmapCatalog.zones.forEach { zone ->
                 val questsInZone = filteredQuests.filter { it.zoneId == zone.id }
                 if (questsInZone.isEmpty()) return@forEach
@@ -210,16 +209,15 @@ fun ChecklistContent(
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     shape = DroidQuestCornerShapes.QuestCard,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Column {
-                        // Clean Zone Header
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { collapsedZones[zone.id] = !collapsed }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                                .padding(horizontal = spacing.cardPadding, vertical = spacing.cardPaddingCompact),
+                            verticalArrangement = Arrangement.spacedBy(spacing.base),
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -232,11 +230,11 @@ fun ChecklistContent(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                    modifier = Modifier.weight(1f).padding(end = spacing.md),
                                 )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(spacing.md),
                                 ) {
                                     Text(
                                         text = "$doneZoneSubs/${allZoneSubs.size}",
@@ -247,13 +245,13 @@ fun ChecklistContent(
                                         imageVector = if (collapsed) DroidQuestIcons.ChevronRight else DroidQuestIcons.ChevronDown,
                                         contentDescription = if (collapsed) "Expand zone" else "Collapse zone",
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(16.dp),
+                                        modifier = Modifier.size(sizing.iconMd),
                                     )
                                 }
                             }
                             CalmProgressBar(
                                 progress = zoneFraction,
-                                height = 4.dp,
+                                height = sizing.progressBarThin,
                                 minVisibleFraction = if (doneZoneSubs > 0) 0.04f else 0f,
                             )
                         }
@@ -288,21 +286,20 @@ fun ChecklistContent(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable { onToggleTopic(sub.id) }
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            .padding(horizontal = spacing.cardPadding, vertical = spacing.lg),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(spacing.lg),
                                     ) {
-                                        // Clean Circular Monochrome / Emerald Checkbox
                                         Box(
                                             modifier = Modifier
-                                                .size(22.dp)
+                                                .size(sizing.checkCircleSize)
                                                 .clip(CircleShape)
                                                 .background(
                                                     if (isDone) MaterialTheme.colorScheme.primaryContainer
                                                     else MaterialTheme.colorScheme.surfaceContainerLowest
                                                 )
                                                 .border(
-                                                    width = 1.5.dp,
+                                                    width = borders.medium,
                                                     color = if (isDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                                     shape = CircleShape,
                                                 ),
@@ -313,14 +310,14 @@ fun ChecklistContent(
                                                     imageVector = DroidQuestIcons.Check,
                                                     contentDescription = "Done",
                                                     tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(13.dp),
+                                                    modifier = Modifier.size(sizing.iconXs),
                                                 )
                                             }
                                         }
 
                                         Column(
                                             modifier = Modifier.weight(1f),
-                                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                                            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
                                         ) {
                                             Text(
                                                 text = sub.title,
@@ -346,7 +343,7 @@ fun ChecklistContent(
 
                                         Box(
                                             modifier = Modifier
-                                                .size(28.dp)
+                                                .size(sizing.ghostButtonSize)
                                                 .clip(CircleShape)
                                                 .clickable { onSelectQuest(quest.id) },
                                             contentAlignment = Alignment.Center,
@@ -355,7 +352,7 @@ fun ChecklistContent(
                                                 imageVector = DroidQuestIcons.ChevronRight,
                                                 contentDescription = "Open quest details",
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(16.dp),
+                                                modifier = Modifier.size(sizing.iconMd),
                                             )
                                         }
                                     }
@@ -370,12 +367,12 @@ fun ChecklistContent(
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     shape = DroidQuestCornerShapes.QuestCard,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(28.dp),
+                        modifier = Modifier.fillMaxWidth().padding(spacing.emptyStatePadding),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(spacing.sm),
                     ) {
                         Text(
                             text = "No matching topics",
@@ -391,7 +388,7 @@ fun ChecklistContent(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(spacing.lg))
         }
     }
 }
@@ -402,11 +399,13 @@ private fun MonochromeFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
     Surface(
         color = if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.HudPill,
         border = BorderStroke(
-            1.dp,
+            borders.hairline,
             if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outlineVariant,
         ),
         modifier = Modifier
@@ -417,7 +416,7 @@ private fun MonochromeFilterChip(
             text = label,
             style = MaterialTheme.typography.labelLarge,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.sm),
         )
     }
 }
@@ -428,6 +427,7 @@ private fun QuietPillarTab(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
     Text(
         text = label,
         style = MaterialTheme.typography.bodySmall,
@@ -435,9 +435,9 @@ private fun QuietPillarTab(
         modifier = Modifier
             .clip(DroidQuestCornerShapes.MicroBadge)
             .background(
-                if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else androidx.compose.ui.graphics.Color.Transparent
+                if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+            .padding(horizontal = spacing.base, vertical = spacing.sm),
     )
 }

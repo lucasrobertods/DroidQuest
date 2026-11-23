@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.components.CalmProgressBar
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
@@ -50,6 +48,9 @@ fun TrophiesContent(
     modifier: Modifier = Modifier,
 ) {
     val ext = DroidQuestTheme.colors
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     val bossQuests = RoadmapCatalog.quests.filter { it.isBoss }
     val activeDaysCount = heatmapDays.count { it.score > 0 }
     val unlockedBossCount = bossQuests.count { boss ->
@@ -59,20 +60,19 @@ fun TrophiesContent(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = spacing.screenHorizontal),
         contentAlignment = Alignment.Center,
     ) {
-        val isWide = maxWidth >= 820.dp
-        val isMedium = maxWidth >= 560.dp
+        val isWide = maxWidth >= sizing.wideBreakpoint
+        val isMedium = maxWidth >= sizing.mediumBreakpoint
 
         Column(
-            modifier = Modifier.widthIn(max = 1040.dp).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = Modifier.widthIn(max = sizing.maxContentWidth).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.section),
         ) {
-            // 1. 3 Equal Monochrome Key Stat Cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.base),
             ) {
                 StatTileCard(
                     icon = DroidQuestIcons.Zap,
@@ -97,16 +97,15 @@ fun TrophiesContent(
                 )
             }
 
-            // 2. 28-Day Study Consistency Heatmap (Monochrome + Emerald Only)
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = DroidQuestCornerShapes.ZoneBanner,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.padding(spacing.cardPaddingSpacious),
+                    verticalArrangement = Arrangement.spacedBy(spacing.xl),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -126,11 +125,11 @@ fun TrophiesContent(
                     }
 
                     val cols = if (isMedium) 14 else 7
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                         heatmapDays.chunked(cols).forEach { week ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                             ) {
                                 week.forEach { day ->
                                     val tileColor = when {
@@ -148,7 +147,7 @@ fun TrophiesContent(
                                     Surface(
                                         color = tileColor,
                                         shape = DroidQuestCornerShapes.MicroBadge,
-                                        modifier = Modifier.weight(1f).height(34.dp),
+                                        modifier = Modifier.weight(1f).height(sizing.heatmapCellHeight),
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
@@ -170,7 +169,7 @@ fun TrophiesContent(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
                         ) {
                             Text(
                                 text = "Less",
@@ -191,21 +190,14 @@ fun TrophiesContent(
                 }
             }
 
-            // 3. Boss Trophies List (Clean Monochrome + Emerald Unlocked State)
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "BOSS TROPHIES · $unlockedBossCount/${bossQuests.size} UNLOCKED",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.base)) {
+                Text(
+                    text = "BOSS TROPHIES · $unlockedBossCount/${bossQuests.size} UNLOCKED",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                     bossQuests.forEach { boss ->
                         val zone = RoadmapCatalog.getZoneById(boss.zoneId)
                         val doneSubs = boss.subtopics.count { topics[it.id]?.completed == true }
@@ -216,7 +208,7 @@ fun TrophiesContent(
                             color = if (defeated) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
                             shape = DroidQuestCornerShapes.QuestCard,
                             border = BorderStroke(
-                                1.dp,
+                                borders.hairline,
                                 if (defeated) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant,
                             ),
                             modifier = Modifier
@@ -225,32 +217,32 @@ fun TrophiesContent(
                                 .clickable { onSelectQuest(boss.id) },
                         ) {
                             Row(
-                                modifier = Modifier.padding(14.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.padding(spacing.cardPaddingCompact),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.lg),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Surface(
-                                    color = if (defeated) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    color = if (defeated) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                                     shape = DroidQuestCornerShapes.TactileButton,
                                     border = BorderStroke(
-                                        1.dp,
+                                        borders.hairline,
                                         if (defeated) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant,
                                     ),
-                                    modifier = Modifier.size(42.dp),
+                                    modifier = Modifier.size(sizing.trophyIconBoxSize),
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             imageVector = if (defeated) DroidQuestIcons.Trophy else DroidQuestIcons.Lock,
                                             contentDescription = null,
                                             tint = if (defeated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp),
+                                            modifier = Modifier.size(sizing.iconXl),
                                         )
                                     }
                                 }
 
                                 Column(
                                     modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalArrangement = Arrangement.spacedBy(spacing.xxs),
                                 ) {
                                     Text(
                                         text = zone.badgeTitle,
@@ -272,7 +264,7 @@ fun TrophiesContent(
                                     color = if (defeated) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLowest,
                                     shape = DroidQuestCornerShapes.MicroBadge,
                                     border = BorderStroke(
-                                        1.dp,
+                                        borders.hairline,
                                         if (defeated) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant,
                                     ),
                                 ) {
@@ -280,7 +272,7 @@ fun TrophiesContent(
                                         text = if (defeated) "UNLOCKED" else "$doneSubs/$totalSubs",
                                         style = DroidQuestTheme.mono.micro,
                                         color = if (defeated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.xs),
                                     )
                                 }
                             }
@@ -289,14 +281,16 @@ fun TrophiesContent(
                 }
             }
 
-            // 4. Zone Mastery Progress Summary
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = DroidQuestCornerShapes.QuestCard,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.padding(spacing.cardPadding),
+                    verticalArrangement = Arrangement.spacedBy(spacing.lg),
+                ) {
                     Text(
                         text = "ZONE MASTERY",
                         style = MaterialTheme.typography.labelSmall,
@@ -310,7 +304,7 @@ fun TrophiesContent(
                         val done = subs.count { topics[it.id]?.completed == true }
                         val pct = if (subs.isNotEmpty()) ((done.toDouble() / subs.size) * 100.0).roundToInt() else 0
 
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -322,7 +316,7 @@ fun TrophiesContent(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                    modifier = Modifier.weight(1f).padding(end = spacing.md),
                                 )
                                 Text(
                                     text = "$done/${subs.size} ($pct%)",
@@ -332,7 +326,7 @@ fun TrophiesContent(
                             }
                             CalmProgressBar(
                                 progress = pct / 100f,
-                                height = 4.dp,
+                                height = sizing.progressBarThin,
                                 minVisibleFraction = if (done > 0) 0.04f else 0f,
                             )
                         }
@@ -340,32 +334,27 @@ fun TrophiesContent(
                 }
             }
 
-            // 5. Senior Engineer Rank Ladder
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = DroidQuestCornerShapes.QuestCard,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(spacing.cardPadding),
+                    verticalArrangement = Arrangement.spacedBy(spacing.base),
                 ) {
                     Text(
                         text = "RANK LADDER",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    val rankCols = when {
-                        isWide -> 4
-                        isMedium -> 2
-                        else -> 2
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val rankCols = if (isWide) 4 else 2
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                         RoadmapCatalog.rankTiers.chunked(rankCols).forEach { rowTiers ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.md),
                             ) {
                                 rowTiers.forEach { tier ->
                                     val reached = totalXp >= tier.minXp
@@ -373,7 +362,7 @@ fun TrophiesContent(
                                         color = if (reached) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLowest,
                                         shape = DroidQuestCornerShapes.TactileButton,
                                         border = BorderStroke(
-                                            1.dp,
+                                            borders.hairline,
                                             if (reached) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant,
                                         ),
                                         modifier = Modifier
@@ -381,8 +370,8 @@ fun TrophiesContent(
                                             .alpha(if (reached) 1f else 0.55f),
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                                            modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.base),
+                                            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
                                         ) {
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
@@ -419,7 +408,7 @@ fun TrophiesContent(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(spacing.lg))
         }
     }
 }
@@ -432,25 +421,28 @@ private fun StatTileCard(
     caption: String,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.QuestCard,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(spacing.cardPaddingCompact),
+            verticalArrangement = Arrangement.spacedBy(spacing.sm),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(14.dp),
+                    modifier = Modifier.size(sizing.iconSm),
                 )
                 Text(
                     text = eyebrow,
@@ -478,9 +470,10 @@ private fun StatTileCard(
 
 @Composable
 private fun HeatmapLegendSwatch(color: Color) {
+    val sizing = DroidQuestTheme.sizing
     Box(
         modifier = Modifier
-            .size(11.dp)
+            .size(sizing.heatmapLegendSwatch)
             .clip(DroidQuestCornerShapes.MicroBadge)
             .background(color),
     )

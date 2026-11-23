@@ -32,9 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.components.CalmProgressBar
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
@@ -58,17 +56,20 @@ fun ZoneTeleportBar(
     onTeleportToZone: (ZoneId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = spacing.screenHorizontal, vertical = spacing.xs),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.widthIn(max = 1040.dp).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.widthIn(max = sizing.maxContentWidth).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
-            // Single compact row: ZONES label on left + High-Yield switch on right
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -82,11 +83,11 @@ fun ZoneTeleportBar(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                     modifier = Modifier
                         .clip(DroidQuestCornerShapes.FullPill)
                         .clickable(onClick = onToggleHighYield)
-                        .padding(start = 6.dp),
+                        .padding(start = spacing.sm),
                 ) {
                     Text(
                         text = "High-Yield",
@@ -103,17 +104,16 @@ fun ZoneTeleportBar(
                             uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                             uncheckedBorderColor = MaterialTheme.colorScheme.outline,
                         ),
-                        modifier = Modifier.scale(0.75f).height(26.dp),
+                        modifier = Modifier.scale(0.75f).height(sizing.trailRailWidth),
                     )
                 }
             }
 
-            // Horizontally scrollable monochrome zone pills
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RoadmapCatalog.zones.forEach { zone ->
@@ -133,7 +133,7 @@ fun ZoneTeleportBar(
                         color = if (isSelected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
                         shape = DroidQuestCornerShapes.HudPill,
                         border = BorderStroke(
-                            1.dp,
+                            borders.hairline,
                             if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
                             else MaterialTheme.colorScheme.outlineVariant,
                         ),
@@ -142,9 +142,9 @@ fun ZoneTeleportBar(
                             .clickable { onTeleportToZone(zone.id) },
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.md),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                         ) {
                             Text(
                                 text = "${zone.number} $shortWord",
@@ -171,29 +171,28 @@ fun ZoneBannerHeader(
     totalZoneSubs: Int,
     modifier: Modifier = Modifier,
 ) {
-    val zonePct = if (totalZoneSubs > 0) {
-        doneZoneSubs.toFloat() / totalZoneSubs.toFloat()
-    } else {
-        0f
-    }
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+    val zonePct = if (totalZoneSubs > 0) doneZoneSubs.toFloat() / totalZoneSubs.toFloat() else 0f
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = spacing.screenHorizontal),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainer,
             shape = DroidQuestCornerShapes.QuestCard,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
             modifier = Modifier
-                .widthIn(max = 1040.dp)
+                .widthIn(max = sizing.maxContentWidth)
                 .fillMaxWidth(),
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(horizontal = spacing.cardPadding, vertical = spacing.cardPaddingCompact),
+                verticalArrangement = Arrangement.spacedBy(spacing.base),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -206,7 +205,7 @@ fun ZoneBannerHeader(
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).padding(end = 8.dp),
+                        modifier = Modifier.weight(1f).padding(end = spacing.md),
                     )
                     Text(
                         text = "$doneZoneSubs/$totalZoneSubs",
@@ -217,7 +216,7 @@ fun ZoneBannerHeader(
 
                 CalmProgressBar(
                     progress = zonePct,
-                    height = 5.dp,
+                    height = sizing.progressBarMedium,
                     minVisibleFraction = if (doneZoneSubs > 0) 0.04f else 0f,
                 )
             }
@@ -237,6 +236,9 @@ fun TrailQuestNodeRow(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     val totalSubs = quest.subtopics.size
     val completedSubs = quest.subtopics.count { topics[it.id]?.completed == true }
     val pctFraction = if (totalSubs > 0) completedSubs.toFloat() / totalSubs else 0f
@@ -247,29 +249,29 @@ fun TrailQuestNodeRow(
 
     val railColor = MaterialTheme.colorScheme.outlineVariant
     val primaryColor = MaterialTheme.colorScheme.primary
+    val railStrokeWidth = borders.medium
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = spacing.screenHorizontal),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
-                .widthIn(max = 1040.dp)
+                .widthIn(max = sizing.maxContentWidth)
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing.lg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Left Vertical Timeline Rail + Crisp Status Node
             Box(
                 modifier = Modifier
-                    .width(26.dp)
+                    .width(sizing.trailRailWidth)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center,
             ) {
-                Canvas(modifier = Modifier.fillMaxHeight().width(2.dp)) {
+                Canvas(modifier = Modifier.fillMaxHeight().width(borders.emphasis)) {
                     val topY = if (indexInZone == 0) size.height / 2f else 0f
                     val bottomY = if (isLastInZone) size.height / 2f else size.height
                     if (bottomY > topY) {
@@ -277,7 +279,7 @@ fun TrailQuestNodeRow(
                             color = railColor,
                             start = Offset(size.width / 2f, topY),
                             end = Offset(size.width / 2f, bottomY),
-                            strokeWidth = 1.5.dp.toPx(),
+                            strokeWidth = railStrokeWidth.toPx(),
                         )
                     }
                 }
@@ -286,17 +288,17 @@ fun TrailQuestNodeRow(
                     isCompleted -> {
                         Box(
                             modifier = Modifier
-                                .size(22.dp)
+                                .size(sizing.trailNodeSize)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primaryContainer)
-                                .border(1.5.dp, primaryColor, CircleShape),
+                                .border(borders.medium, primaryColor, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = DroidQuestIcons.Check,
                                 contentDescription = "Completed",
                                 tint = primaryColor,
-                                modifier = Modifier.size(13.dp),
+                                modifier = Modifier.size(sizing.iconXs),
                             )
                         }
                     }
@@ -304,15 +306,15 @@ fun TrailQuestNodeRow(
                     isHighlighted -> {
                         Box(
                             modifier = Modifier
-                                .size(22.dp)
+                                .size(sizing.trailNodeSize)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primaryContainer)
-                                .border(2.dp, primaryColor, CircleShape),
+                                .border(borders.emphasis, primaryColor, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(sizing.trailActiveDotSize)
                                     .clip(CircleShape)
                                     .background(primaryColor),
                             )
@@ -322,17 +324,17 @@ fun TrailQuestNodeRow(
                     quest.isBoss -> {
                         Box(
                             modifier = Modifier
-                                .size(22.dp)
+                                .size(sizing.trailNodeSize)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                                .border(borders.hairline, MaterialTheme.colorScheme.outline, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = DroidQuestIcons.Lock,
                                 contentDescription = "Boss Challenge",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(11.dp),
+                                modifier = Modifier.size(sizing.iconXs),
                             )
                         }
                     }
@@ -340,32 +342,31 @@ fun TrailQuestNodeRow(
                     else -> {
                         Box(
                             modifier = Modifier
-                                .size(18.dp)
+                                .size(sizing.trailPendingNodeSize)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surfaceContainer)
-                                .border(1.5.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                                .border(borders.medium, MaterialTheme.colorScheme.outline, CircleShape),
                         )
                     }
                 }
             }
 
-            // Right Concise Monochrome Quest Row Card
             Surface(
                 color = if (isHighlighted) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
                 shape = DroidQuestCornerShapes.QuestCard,
                 border = BorderStroke(
-                    1.dp,
+                    borders.hairline,
                     if (isHighlighted) primaryColor.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant,
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .padding(vertical = 5.dp)
+                    .padding(vertical = spacing.xs)
                     .clip(DroidQuestCornerShapes.QuestCard)
                     .clickable(onClick = onSelect),
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 15.dp, vertical = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = spacing.cardPadding, vertical = spacing.cardPaddingCompact),
+                    verticalArrangement = Arrangement.spacedBy(spacing.md),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -373,8 +374,8 @@ fun TrailQuestNodeRow(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(
-                            modifier = Modifier.weight(1f).padding(end = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.weight(1f).padding(end = spacing.base),
+                            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
                         ) {
                             Text(
                                 text = quest.title,
@@ -414,7 +415,7 @@ fun TrailQuestNodeRow(
                     if (isHighlighted && totalSubs > 0) {
                         CalmProgressBar(
                             progress = pctFraction,
-                            height = 4.dp,
+                            height = sizing.progressBarThin,
                             minVisibleFraction = if (completedSubs > 0) 0.05f else 0f,
                         )
                     }

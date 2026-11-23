@@ -12,6 +12,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 val LocalDroidQuestColors = staticCompositionLocalOf { DefaultDroidQuestExtendedColors }
+val LocalDroidQuestSpacing = staticCompositionLocalOf { DefaultDroidQuestSpacing }
+val LocalDroidQuestSizing = staticCompositionLocalOf { DefaultDroidQuestSizing }
+val LocalDroidQuestBorders = staticCompositionLocalOf { DefaultDroidQuestBorders }
+val LocalDroidQuestMotion = staticCompositionLocalOf { DefaultDroidQuestMotion }
 
 val LocalDroidQuestMono = staticCompositionLocalOf {
     DroidQuestMonoTypography(
@@ -32,6 +36,26 @@ object DroidQuestTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalDroidQuestMono.current
+
+    val spacing: DroidQuestSpacing
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalDroidQuestSpacing.current
+
+    val sizing: DroidQuestSizing
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalDroidQuestSizing.current
+
+    val borders: DroidQuestBorders
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalDroidQuestBorders.current
+
+    val motion: DroidQuestMotion
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalDroidQuestMotion.current
 }
 
 @Composable
@@ -47,6 +71,10 @@ fun DroidQuestTheme(
     CompositionLocalProvider(
         LocalDroidQuestColors provides extendedColors,
         LocalDroidQuestMono provides monoTypography,
+        LocalDroidQuestSpacing provides DefaultDroidQuestSpacing,
+        LocalDroidQuestSizing provides DefaultDroidQuestSizing,
+        LocalDroidQuestBorders provides DefaultDroidQuestBorders,
+        LocalDroidQuestMotion provides DefaultDroidQuestMotion,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

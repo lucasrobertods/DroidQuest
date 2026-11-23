@@ -2,7 +2,6 @@ package com.lrds.androidroadapp.presentation.review
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
@@ -47,28 +45,30 @@ fun ReviewQueueContent(
     modifier: Modifier = Modifier,
 ) {
     val ext = DroidQuestTheme.colors
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     val expandedCards = remember { mutableStateMapOf<String, Boolean>() }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = spacing.screenHorizontal),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.widthIn(max = 1040.dp).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.widthIn(max = sizing.maxContentWidth).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.xxl),
         ) {
-            // Concise Monochrome Review Summary Card
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = DroidQuestCornerShapes.ZoneBanner,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(spacing.cardPaddingSpacious),
+                    verticalArrangement = Arrangement.spacedBy(spacing.base),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -81,18 +81,18 @@ fun ReviewQueueContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f).padding(end = 8.dp),
+                            modifier = Modifier.weight(1f).padding(end = spacing.md),
                         )
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
                             shape = DroidQuestCornerShapes.MicroBadge,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                         ) {
                             Text(
                                 text = "+25 XP",
                                 style = DroidQuestTheme.mono.micro,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.xs),
                             )
                         }
                     }
@@ -104,7 +104,7 @@ fun ReviewQueueContent(
                     ) {
                         Row(
                             verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
                         ) {
                             Text(
                                 text = "${dueNow.size}",
@@ -115,36 +115,35 @@ fun ReviewQueueContent(
                                 text = "Due Now",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 3.dp),
+                                modifier = Modifier.padding(bottom = spacing.xs),
                             )
                         }
                         Text(
                             text = "${upcoming.size} upcoming",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp),
+                            modifier = Modifier.padding(bottom = spacing.xs),
                         )
                     }
                 }
             }
 
-            // DUE NOW ACTIVE-RECALL DECK
             if (dueNow.isEmpty()) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     shape = DroidQuestCornerShapes.QuestCard,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(28.dp),
+                        modifier = Modifier.fillMaxWidth().padding(spacing.emptyStatePadding),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(spacing.md),
                     ) {
                         Icon(
                             imageVector = DroidQuestIcons.CheckCircle2,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(34.dp),
+                            modifier = Modifier.size(sizing.iconEmptyState),
                         )
                         Text(
                             text = "All caught up",
@@ -167,14 +166,13 @@ fun ReviewQueueContent(
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shape = DroidQuestCornerShapes.ZoneBanner,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.padding(spacing.cardPadding),
+                            verticalArrangement = Arrangement.spacedBy(spacing.lg),
                         ) {
-                            // Meta Row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -186,15 +184,15 @@ fun ReviewQueueContent(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                    modifier = Modifier.weight(1f).padding(end = spacing.md),
                                 )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(spacing.xs),
                                     modifier = Modifier
                                         .clip(DroidQuestCornerShapes.MicroBadge)
                                         .clickable { onSelectQuest(item.quest.id) }
-                                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                                        .padding(horizontal = spacing.xs, vertical = spacing.xxs),
                                 ) {
                                     Text(
                                         text = "Open Quest",
@@ -205,13 +203,12 @@ fun ReviewQueueContent(
                                         imageVector = DroidQuestIcons.ArrowRight,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(13.dp),
+                                        modifier = Modifier.size(sizing.iconSm),
                                     )
                                 }
                             }
 
-                            // Topic Title & Description
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                                 Text(
                                     text = item.subtopic.title,
                                     style = MaterialTheme.typography.titleLarge,
@@ -224,22 +221,21 @@ fun ReviewQueueContent(
                                 )
                             }
 
-                            // Recessed Active-Recall Prompt Box
                             if (item.quest.interviewQuestions.isNotEmpty()) {
                                 Surface(
                                     color = MaterialTheme.colorScheme.surfaceContainerLowest,
                                     shape = DroidQuestCornerShapes.QuestCard,
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                    border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                                 ) {
                                     Column(
-                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(spacing.cardPaddingCompact),
+                                        verticalArrangement = Arrangement.spacedBy(spacing.base),
                                     ) {
                                         item.quest.interviewQuestions.forEachIndexed { qIdx, q ->
                                             if (qIdx > 0) {
                                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                             }
-                                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                                                 Text(
                                                     text = q.question,
                                                     style = MaterialTheme.typography.titleSmall,
@@ -258,15 +254,15 @@ fun ReviewQueueContent(
                                         Surface(
                                             color = MaterialTheme.colorScheme.surfaceContainer,
                                             shape = DroidQuestCornerShapes.TactileButton,
-                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clip(DroidQuestCornerShapes.TactileButton)
                                                 .clickable { expandedCards[item.subtopic.id] = !showAnswers },
                                         ) {
                                             Row(
-                                                modifier = Modifier.padding(vertical = 9.dp, horizontal = 12.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                                modifier = Modifier.padding(vertical = spacing.base, horizontal = spacing.lg),
+                                                horizontalArrangement = Arrangement.spacedBy(spacing.sm, Alignment.CenterHorizontally),
                                                 verticalAlignment = Alignment.CenterVertically,
                                             ) {
                                                 Text(
@@ -278,7 +274,7 @@ fun ReviewQueueContent(
                                                     imageVector = if (showAnswers) DroidQuestIcons.ChevronUp else DroidQuestIcons.ChevronDown,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier = Modifier.size(15.dp),
+                                                    modifier = Modifier.size(sizing.iconMd),
                                                 )
                                             }
                                         }
@@ -286,7 +282,6 @@ fun ReviewQueueContent(
                                 }
                             }
 
-                            // Stage & 4-Column Calm Interval Dispatch Row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -306,12 +301,12 @@ fun ReviewQueueContent(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.md),
                             ) {
                                 ReviewRatingTile(
                                     title = "Forgot",
                                     interval = "1d",
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     borderColor = MaterialTheme.colorScheme.outlineVariant,
                                     titleColor = MaterialTheme.colorScheme.onSurface,
                                     subColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -321,7 +316,7 @@ fun ReviewQueueContent(
                                 ReviewRatingTile(
                                     title = "Hard",
                                     interval = "2d",
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     borderColor = MaterialTheme.colorScheme.outlineVariant,
                                     titleColor = MaterialTheme.colorScheme.onSurface,
                                     subColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -341,7 +336,7 @@ fun ReviewQueueContent(
                                 ReviewRatingTile(
                                     title = "Easy",
                                     interval = "Jump",
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     borderColor = MaterialTheme.colorScheme.outline,
                                     titleColor = MaterialTheme.colorScheme.primary,
                                     subColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -354,8 +349,7 @@ fun ReviewQueueContent(
                 }
             }
 
-            // UPCOMING REVIEWS LIST
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.base)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -377,20 +371,20 @@ fun ReviewQueueContent(
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceContainer,
                         shape = DroidQuestCornerShapes.QuestCard,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                     ) {
                         Text(
                             text = "Completed topics automatically appear here with their next review date.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(spacing.cardPadding),
                         )
                     }
                 } else {
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceContainer,
                         shape = DroidQuestCornerShapes.QuestCard,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                     ) {
                         Column {
                             upcoming.forEachIndexed { idx, item ->
@@ -402,13 +396,13 @@ fun ReviewQueueContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onSelectQuest(item.quest.id) }
-                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                        .padding(horizontal = spacing.cardPaddingCompact, vertical = spacing.lg),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Column(
-                                        modifier = Modifier.weight(1f).padding(end = 10.dp),
-                                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                                        modifier = Modifier.weight(1f).padding(end = spacing.base),
+                                        verticalArrangement = Arrangement.spacedBy(spacing.xxs),
                                     ) {
                                         Text(
                                             text = item.subtopic.title,
@@ -437,7 +431,7 @@ fun ReviewQueueContent(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(spacing.lg))
         }
     }
 }
@@ -453,18 +447,20 @@ private fun ReviewRatingTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
     Surface(
         color = containerColor,
         shape = DroidQuestCornerShapes.TactileButton,
-        border = BorderStroke(1.dp, borderColor),
+        border = BorderStroke(borders.hairline, borderColor),
         modifier = modifier
             .clip(DroidQuestCornerShapes.TactileButton)
             .clickable(onClick = onClick),
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+            modifier = Modifier.padding(vertical = spacing.base, horizontal = spacing.sm),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
         ) {
             Text(
                 text = title,

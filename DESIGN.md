@@ -67,18 +67,14 @@ DroidQuest is a focused 100-day Senior Android interview preparation companion. 
 
 ---
 
-## 4. Shape & Spacing Scale
+## 4. Tokenized Spacing, Sizing, Borders & Motion (`Tokens.kt`)
 
-- **Screen horizontal margin:** `16.dp` (max content width `1040.dp` on wide desktop/tablet).
-- **Card padding:** `14.dp–18.dp`, vertical section spacing `14.dp–18.dp`.
-- **Corner Radii:**
-  - `MicroBadge` / tags / heatmap tiles: `8.dp`
-  - `TactileButton` / inputs / rating tiles: `12.dp`
-  - `HudPill` / telemetry pills / zone pills: `12.dp` or `CircleShape`
-  - `QuestCard` / primary cards: `16.dp`
-  - `ZoneBanner` / hero card / modal cards: `20.dp`
-  - `SheetTop`: `24.dp` top corners
-  - `FloatingNavPill`: `CircleShape` (`28.dp` height-adaptive pill)
+All layout dimensions, border widths, and animation timings are exposed through `DroidQuestTheme`:
+- **`DroidQuestTheme.spacing`**: `xxs (2dp)`, `xs (4dp)`, `sm (6dp)`, `md (8dp)`, `base (10dp)`, `lg (12dp)`, `xl (14dp)`, `xxl (16dp)`, `section (18dp)`, `sheetSection (22dp)`, `screenHorizontal (16dp)`, `cardPadding (16dp)`, `cardPaddingCompact (14dp)`, `cardPaddingSpacious (18dp)`, `dialogPadding (20dp)`.
+- **`DroidQuestTheme.sizing`**: `maxContentWidth (1040dp)`, `wideBreakpoint (820dp)`, `mediumBreakpoint (560dp)`, `iconXs..Xl (12–20dp)`, `progressBarThin/Medium/Standard (4/5/6dp)`, `navPillMaxWidth (460dp)`, `elevationNavPill (14dp)`, `elevationModal (24dp)`.
+- **`DroidQuestTheme.borders`**: `hairline (1dp)`, `medium (1.5dp)`, `emphasis (2dp)`.
+- **`DroidQuestTheme.motion`**: `pressMs (80ms)`, `fastMs (180ms)`, `standardMs (240ms)`, `sheetMs (280ms)`, `progressMs (450ms)`, `celebrationMs (1150ms)`.
+- **Corner Radii (`Shape.kt`)**: `MicroBadge (8dp)`, `TactileButton / HudPill (12dp)`, `QuestCard (16dp)`, `ZoneBanner (20dp)`, `Dialog (22dp)`, `SheetTop (24dp top)`, `FullPill (CircleShape)`.
 
 ---
 
