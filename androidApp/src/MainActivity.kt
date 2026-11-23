@@ -1,6 +1,7 @@
 package com.lrds.androidroadapp
 
 import android.Manifest
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -63,6 +64,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         AndroidPlatformHost.init(applicationContext)
+        AndroidPlatformHost.handleLaunchIntent(intent)
         AndroidPlatformHost.onExportDocumentRequested = { fileName, content, onResult ->
             pendingExportJson = content
             pendingExportCallback = onResult
@@ -97,6 +99,12 @@ class MainActivity : ComponentActivity() {
                 }
             )
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        AndroidPlatformHost.handleLaunchIntent(intent)
     }
 
     override fun onDestroy() {

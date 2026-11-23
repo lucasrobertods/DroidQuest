@@ -12,6 +12,7 @@
             android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
                 android:exported="true"
+                android:launchMode="singleTop"
                 android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,6 +23,10 @@
 
         <receiver
                 android:name="com.lrds.androidroadapp.platform.ReviewReminderReceiver"
+                android:exported="false" />
+
+        <receiver
+                android:name="com.lrds.androidroadapp.platform.StudySessionReminderReceiver"
                 android:exported="false" />
     </application>
 

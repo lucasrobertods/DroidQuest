@@ -7,13 +7,18 @@ import com.lrds.androidroadapp.data.ProgressStorage
 import com.lrds.androidroadapp.domain.model.ResourceType
 import com.lrds.androidroadapp.domain.model.ReviewRating
 import com.lrds.androidroadapp.domain.model.SaveStatus
+import com.lrds.androidroadapp.domain.model.StudySchedule
 import com.lrds.androidroadapp.domain.model.UserProgressState
+import com.lrds.androidroadapp.platform.DeepLinkTarget
 import com.lrds.androidroadapp.platform.PlatformBridge
 import com.lrds.androidroadapp.presentation.ActiveTab
 import com.lrds.androidroadapp.presentation.DroidQuestIntent
 import com.lrds.androidroadapp.presentation.DroidQuestViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -26,6 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -46,10 +52,35 @@ private class FakeProgressStorage(
     }
 }
 
-private class FakePlatformBridge : PlatformBridge {
+private data class StudySyncCall(
+    val enabled: Boolean,
+    val daysOfWeek: Set<Int>,
+    val hour: Int,
+    val minute: Int,
+    val nextQuestId: String?,
+    val nextQuestTitle: String?,
+)
+
+private class FakePlatformBridge(
+    var grantPermission: Boolean = true,
+) : PlatformBridge {
     override val supportsDailyReminders: Boolean = true
     override val supportsNativeFilePicker: Boolean = true
+
+    private val _pendingDeepLink = MutableStateFlow<DeepLinkTarget?>(null)
+    override val pendingDeepLink: StateFlow<DeepLinkTarget?> = _pendingDeepLink.asStateFlow()
+
     val openedUrls = mutableListOf<String>()
+    val dailyReviewSyncCalls = mutableListOf<Pair<Boolean, Int>>()
+    val studySyncCalls = mutableListOf<StudySyncCall>()
+
+    fun emitDeepLink(target: DeepLinkTarget) {
+        _pendingDeepLink.value = target
+    }
+
+    override fun consumePendingDeepLink() {
+        _pendingDeepLink.value = null
+    }
 
     override fun openUrl(url: String) {
         openedUrls += url
@@ -73,7 +104,31 @@ private class FakePlatformBridge : PlatformBridge {
         dueCount: Int,
         onResult: (Boolean, String) -> Unit,
     ) {
-        onResult(enabled, if (enabled) "Reminder enabled" else "Reminder disabled")
+        dailyReviewSyncCalls += enabled to hour
+        val effective = enabled && grantPermission
+        onResult(effective, if (effective) "Reminder enabled" else "Reminder disabled")
+    }
+
+    override fun syncStudySessionReminder(
+        enabled: Boolean,
+        daysOfWeek: Set<Int>,
+        hour: Int,
+        minute: Int,
+        nextQuestId: String?,
+        nextQuestTitle: String?,
+        onResult: (Boolean, String) -> Unit,
+    ) {
+        studySyncCalls += StudySyncCall(enabled, daysOfWeek, hour, minute, nextQuestId, nextQuestTitle)
+        val effective = enabled && grantPermission && daysOfWeek.isNotEmpty()
+        onResult(
+            effective,
+            when {
+                !enabled -> "Study schedule reminders paused."
+                !grantPermission -> "Notification permission denied."
+                daysOfWeek.isEmpty() -> "Select at least one day."
+                else -> "Study schedule set!"
+            },
+        )
     }
 }
 
@@ -208,6 +263,145 @@ class DroidQuestViewModelTest {
             val afterImport = expectMostRecentItem()
             assertEquals("ART AOT+JIT notes", afterImport.progress.questNotes["q1-android-fundamentals"])
             assertEquals(11, afterImport.countdown.currentDay)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `study schedule reminders coexist with daily review reminders and handle permissions cleanly`() = runTest(testDispatcher) {
+        val storage = FakeProgressStorage()
+        val bridge = FakePlatformBridge(grantPermission = true)
+        val repo = ProgressRepository(
+            storage = storage,
+            scope = backgroundScope,
+            clock = fixedClock,
+            timeZoneProvider = { TimeZone.UTC },
+            saveDebounceMs = 0L,
+        )
+        val viewModel = DroidQuestViewModel(
+            repository = repo,
+            platformBridge = bridge,
+            clock = fixedClock,
+            timeZoneProvider = { TimeZone.UTC },
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+            advanceUntilIdle()
+
+            // Editing days/time while paused persists without triggering platform permission prompt
+            viewModel.onIntent(
+                DroidQuestIntent.SetStudySchedule(
+                    enabled = false,
+                    daysOfWeek = setOf(1, 3, 5),
+                    hour = 8,
+                    minute = 30,
+                )
+            )
+            advanceUntilIdle()
+            assertEquals(0, bridge.studySyncCalls.size)
+            val pausedState = expectMostRecentItem()
+            assertFalse(pausedState.progress.studyReminderEnabled)
+            assertEquals(setOf(1, 3, 5), pausedState.progress.studyReminderDays)
+            assertEquals(8, pausedState.progress.studyReminderHour)
+            assertEquals(30, pausedState.progress.studyReminderMinute)
+
+            // Enabling Study Schedule schedules notifications with Next Recommended Quest metadata
+            viewModel.onIntent(
+                DroidQuestIntent.SetStudySchedule(
+                    enabled = true,
+                    daysOfWeek = setOf(1, 3, 5),
+                    hour = 8,
+                    minute = 30,
+                )
+            )
+            advanceUntilIdle()
+            val enabledState = expectMostRecentItem()
+            assertTrue(enabledState.progress.studyReminderEnabled)
+            assertEquals(1, bridge.studySyncCalls.size)
+            assertEquals("q1-android-fundamentals", bridge.studySyncCalls.last().nextQuestId)
+            assertNotNull(bridge.studySyncCalls.last().nextQuestTitle)
+
+            // Enabling Daily Review Reminder works independently without touching Study Schedule
+            viewModel.onIntent(DroidQuestIntent.SetDailyReminder(enabled = true, hour = 21))
+            advanceUntilIdle()
+            val bothEnabled = expectMostRecentItem()
+            assertTrue(bothEnabled.progress.dailyReminderEnabled)
+            assertEquals(21, bothEnabled.progress.reminderHour)
+            assertTrue(bothEnabled.progress.studyReminderEnabled)
+            assertEquals(setOf(1, 3, 5), bothEnabled.progress.studyReminderDays)
+
+            // Deselecting last remaining day while enabled cancels study schedule cleanly
+            viewModel.onIntent(
+                DroidQuestIntent.SetStudySchedule(
+                    enabled = true,
+                    daysOfWeek = emptySet(),
+                    hour = 8,
+                    minute = 30,
+                )
+            )
+            advanceUntilIdle()
+            val clearedState = expectMostRecentItem()
+            assertFalse(clearedState.progress.studyReminderEnabled)
+            assertEquals(emptySet(), clearedState.progress.studyReminderDays)
+            assertTrue(clearedState.progress.dailyReminderEnabled) // unaffected!
+
+            // Re-enabling with empty days defaults back to Mon-Fri, and respects permission denial
+            bridge.grantPermission = false
+            viewModel.onIntent(
+                DroidQuestIntent.SetStudySchedule(
+                    enabled = true,
+                    daysOfWeek = emptySet(),
+                    hour = 19,
+                    minute = 0,
+                )
+            )
+            advanceUntilIdle()
+            val deniedState = expectMostRecentItem()
+            assertFalse(deniedState.progress.studyReminderEnabled)
+            assertEquals(StudySchedule.DEFAULT_DAYS, deniedState.progress.studyReminderDays)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `study notification deep link opens Next Recommended Quest on Trail tab and consumes event`() = runTest(testDispatcher) {
+        val storage = FakeProgressStorage()
+        val bridge = FakePlatformBridge()
+        val repo = ProgressRepository(
+            storage = storage,
+            scope = backgroundScope,
+            clock = fixedClock,
+            timeZoneProvider = { TimeZone.UTC },
+            saveDebounceMs = 0L,
+        )
+        val viewModel = DroidQuestViewModel(
+            repository = repo,
+            platformBridge = bridge,
+            clock = fixedClock,
+            timeZoneProvider = { TimeZone.UTC },
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+            advanceUntilIdle()
+
+            // Navigate away and open settings before notification tap arrives
+            viewModel.onIntent(DroidQuestIntent.SelectTab(ActiveTab.TROPHIES))
+            viewModel.onIntent(DroidQuestIntent.SetSettingsOpen(true))
+            advanceUntilIdle()
+
+            bridge.emitDeepLink(DeepLinkTarget.OpenNextRecommendedQuest(preferredQuestId = "q1-android-fundamentals"))
+            advanceUntilIdle()
+
+            val afterDeepLink = expectMostRecentItem()
+            assertEquals(ActiveTab.TRAIL, afterDeepLink.activeTab)
+            assertFalse(afterDeepLink.settingsOpen)
+            assertEquals(afterDeepLink.nextRecommendedQuest?.id, afterDeepLink.selectedQuestId)
+            assertNotNull(afterDeepLink.selectedQuest)
+            assertNull(bridge.pendingDeepLink.value)
 
             cancelAndIgnoreRemainingEvents()
         }

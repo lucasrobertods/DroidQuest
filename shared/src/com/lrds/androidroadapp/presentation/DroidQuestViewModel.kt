@@ -18,8 +18,10 @@ import com.lrds.androidroadapp.domain.model.ReviewRating
 import com.lrds.androidroadapp.domain.model.SaveStatus
 import com.lrds.androidroadapp.domain.model.SprintCountdown
 import com.lrds.androidroadapp.domain.model.StudyLogEntry
+import com.lrds.androidroadapp.domain.model.StudySchedule
 import com.lrds.androidroadapp.domain.model.ThemeMode
 import com.lrds.androidroadapp.domain.model.UserProgressState
+import com.lrds.androidroadapp.platform.DeepLinkTarget
 import com.lrds.androidroadapp.platform.PlatformBridge
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -123,6 +125,12 @@ sealed interface DroidQuestIntent {
     data object ToggleSound : DroidQuestIntent
     data class SetThemeMode(val mode: ThemeMode) : DroidQuestIntent
     data class SetDailyReminder(val enabled: Boolean, val hour: Int) : DroidQuestIntent
+    data class SetStudySchedule(
+        val enabled: Boolean,
+        val daysOfWeek: Set<Int>,
+        val hour: Int,
+        val minute: Int,
+    ) : DroidQuestIntent
     data class OpenExternalUrl(val url: String) : DroidQuestIntent
     data object ExportBackupJson : DroidQuestIntent
     data object PickBackupJsonFile : DroidQuestIntent
@@ -160,6 +168,36 @@ class DroidQuestViewModel(
 
     init {
         repository.loadInitial()
+        observePlatformDeepLinks()
+    }
+
+    private fun observePlatformDeepLinks() {
+        viewModelScope.launch {
+            combine(platformBridge.pendingDeepLink, repository.saveStatus) { target, status ->
+                if (target != null && status != SaveStatus.LOADING) target else null
+            }.collect { target ->
+                if (target != null) {
+                    handleDeepLink(target)
+                    platformBridge.consumePendingDeepLink()
+                }
+            }
+        }
+    }
+
+    private fun handleDeepLink(target: DeepLinkTarget) {
+        when (target) {
+            is DeepLinkTarget.OpenNextRecommendedQuest -> {
+                val nextQuestId = findNextRecommendedQuest(repository.state.value)?.id
+                    ?: target.preferredQuestId?.takeIf { RoadmapCatalog.questsById.containsKey(it) }
+                overrides.update {
+                    it.copy(
+                        activeTab = ActiveTab.TRAIL,
+                        settingsOpen = false,
+                        selectedQuestId = nextQuestId,
+                    )
+                }
+            }
+        }
     }
 
     val uiState: StateFlow<DroidQuestUiState> = combine(
@@ -242,6 +280,9 @@ class DroidQuestViewModel(
                     )
                 }
             }
+            is DroidQuestIntent.SetStudySchedule -> {
+                handleSetStudySchedule(intent)
+            }
             is DroidQuestIntent.OpenExternalUrl -> {
                 platformBridge.openUrl(intent.url)
             }
@@ -259,6 +300,7 @@ class DroidQuestViewModel(
                         val outcome = repository.importProgressJson(raw)
                         applyOutcome(outcome)
                         if (outcome.success) {
+                            syncRemindersAfterRestore(repository.state.value)
                             overrides.update { it.copy(settingsOpen = false) }
                         }
                     }
@@ -268,16 +310,106 @@ class DroidQuestViewModel(
                 val outcome = repository.importProgressJson(intent.raw)
                 applyOutcome(outcome)
                 if (outcome.success) {
+                    syncRemindersAfterRestore(repository.state.value)
                     overrides.update { it.copy(settingsOpen = false) }
                 }
             }
             DroidQuestIntent.ResetProgress -> {
                 val outcome = repository.resetProgress()
                 applyOutcome(outcome)
+                cancelAllPlatformRemindersQuietly()
                 overrides.update { it.copy(settingsOpen = false) }
             }
         }
     }
+
+    private fun handleSetStudySchedule(intent: DroidQuestIntent.SetStudySchedule) {
+        val wasEnabled = repository.state.value.studyReminderEnabled
+        val normalizedDays = StudySchedule.normalizeDays(intent.daysOfWeek)
+        val clampedHour = StudySchedule.clampHour(intent.hour)
+        val clampedMinute = StudySchedule.clampMinute(intent.minute)
+
+        // Allow adjusting preferred days/time quietly while study reminders are turned off.
+        if (!intent.enabled && !wasEnabled) {
+            repository.setStudyScheduleReminder(
+                enabled = false,
+                daysOfWeek = normalizedDays,
+                hour = clampedHour,
+                minute = clampedMinute,
+            )
+            return
+        }
+
+        // Turning ON with no days selected defaults back to Mon–Fri; deselecting the last day while ON pauses reminders.
+        val effectiveDays = if (intent.enabled && !wasEnabled && normalizedDays.isEmpty()) {
+            StudySchedule.DEFAULT_DAYS
+        } else {
+            normalizedDays
+        }
+        val shouldEnable = intent.enabled && effectiveDays.isNotEmpty()
+        val nextQuest = findNextRecommendedQuest(repository.state.value)
+
+        platformBridge.syncStudySessionReminder(
+            enabled = shouldEnable,
+            daysOfWeek = effectiveDays,
+            hour = clampedHour,
+            minute = clampedMinute,
+            nextQuestId = nextQuest?.id,
+            nextQuestTitle = nextQuest?.title,
+        ) { granted, message ->
+            val effectiveEnabled = shouldEnable && granted
+            repository.setStudyScheduleReminder(
+                enabled = effectiveEnabled,
+                daysOfWeek = effectiveDays,
+                hour = clampedHour,
+                minute = clampedMinute,
+            )
+            showToast(
+                message = message,
+                tone = if (effectiveEnabled) ToastTone.EMERALD else ToastTone.AMBER,
+            )
+        }
+    }
+
+    private fun syncRemindersAfterRestore(restored: UserProgressState) {
+        if (!platformBridge.supportsDailyReminders) return
+        val nextQuest = findNextRecommendedQuest(restored)
+        platformBridge.syncStudySessionReminder(
+            enabled = restored.studyReminderEnabled && restored.studyReminderDays.isNotEmpty(),
+            daysOfWeek = restored.studyReminderDays,
+            hour = restored.studyReminderHour,
+            minute = restored.studyReminderMinute,
+            nextQuestId = nextQuest?.id,
+            nextQuestTitle = nextQuest?.title,
+        ) { granted, _ ->
+            if (restored.studyReminderEnabled && !granted) {
+                repository.setStudyScheduleReminder(
+                    enabled = false,
+                    daysOfWeek = restored.studyReminderDays,
+                    hour = restored.studyReminderHour,
+                    minute = restored.studyReminderMinute,
+                )
+            }
+        }
+    }
+
+    private fun cancelAllPlatformRemindersQuietly() {
+        if (!platformBridge.supportsDailyReminders) return
+        platformBridge.syncDailyReviewReminder(enabled = false, hour = 20, dueCount = 0) { _, _ -> }
+        platformBridge.syncStudySessionReminder(
+            enabled = false,
+            daysOfWeek = emptySet(),
+            hour = StudySchedule.DEFAULT_HOUR,
+            minute = StudySchedule.DEFAULT_MINUTE,
+            nextQuestId = null,
+            nextQuestTitle = null,
+        ) { _, _ -> }
+    }
+
+    private fun findNextRecommendedQuest(progress: UserProgressState): QuestModule? =
+        RoadmapCatalog.quests.firstOrNull { quest ->
+            quest.subtopics.any { sub -> progress.topics[sub.id]?.completed != true }
+        }
 
     fun getCurrentBackupJson(): String = repository.exportProgressJson()
 
@@ -347,9 +479,7 @@ class DroidQuestViewModel(
             PillarStat(pillar = pillar, done = done, total = total, pct = pct)
         }
 
-        val nextRecommended = RoadmapCatalog.quests.firstOrNull { quest ->
-            quest.subtopics.any { sub -> progress.topics[sub.id]?.completed != true }
-        }
+        val nextRecommended = findNextRecommendedQuest(progress)
 
         val reviewQueues = SpacedRepetitionEngine.buildReviewQueues(progress.topics, now, timeZone)
         val streak = SpacedRepetitionEngine.calculateStreak(progress.activityLog, now, timeZone)

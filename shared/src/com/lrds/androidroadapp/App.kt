@@ -346,6 +346,10 @@ fun DroidQuestAppContent(
                 storageLabel = state.storageLabel,
                 dailyReminderEnabled = state.progress.dailyReminderEnabled,
                 reminderHour = state.progress.reminderHour,
+                studyReminderEnabled = state.progress.studyReminderEnabled,
+                studyReminderDays = state.progress.studyReminderDays,
+                studyReminderHour = state.progress.studyReminderHour,
+                studyReminderMinute = state.progress.studyReminderMinute,
                 supportsDailyReminders = state.supportsDailyReminders,
                 supportsNativeFilePicker = state.supportsNativeFilePicker,
                 onClose = { viewModel.onIntent(DroidQuestIntent.SetSettingsOpen(false)) },
@@ -353,6 +357,9 @@ fun DroidQuestAppContent(
                 onUpdateStartDate = { viewModel.onIntent(DroidQuestIntent.UpdateStartDate(it)) },
                 onSetDailyReminder = { enabled, hour ->
                     viewModel.onIntent(DroidQuestIntent.SetDailyReminder(enabled, hour))
+                },
+                onSetStudySchedule = { enabled, days, hour, minute ->
+                    viewModel.onIntent(DroidQuestIntent.SetStudySchedule(enabled, days, hour, minute))
                 },
                 onExportJson = { viewModel.onIntent(DroidQuestIntent.ExportBackupJson) },
                 onPickJsonFile = { viewModel.onIntent(DroidQuestIntent.PickBackupJsonFile) },

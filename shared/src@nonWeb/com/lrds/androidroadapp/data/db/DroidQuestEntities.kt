@@ -2,6 +2,7 @@ package com.lrds.androidroadapp.data.db
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.lrds.androidroadapp.domain.model.StudySchedule
 
 @Entity(tableName = "mission_config")
 data class MissionConfigEntity(
@@ -13,6 +14,10 @@ data class MissionConfigEntity(
     val themeMode: String = "SYSTEM",
     val dailyReminderEnabled: Boolean,
     val reminderHour: Int,
+    val studyReminderEnabled: Boolean = false,
+    val studyReminderDays: String = StudySchedule.DEFAULT_DAYS_CSV,
+    val studyReminderHour: Int = StudySchedule.DEFAULT_HOUR,
+    val studyReminderMinute: Int = StudySchedule.DEFAULT_MINUTE,
     val lastUpdated: String,
 )
 
