@@ -1,0 +1,15 @@
+title = "DroidQuest Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore build outputs, IDE caches, and binary font/image assets"
+paths = [
+    '''^build/''',
+    '''^\.kotlin/''',
+    '''^\.idea/''',
+    '''^shared/composeResources/font/''',
+    '''^shared/composeResources/drawable/.*\.(jpg|jpeg|png)$''',
+    '''^androidApp/res/mipmap-.*/.*\.png$''',
+]
