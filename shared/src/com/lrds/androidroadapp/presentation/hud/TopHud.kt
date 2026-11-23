@@ -1,5 +1,11 @@
 package com.lrds.androidroadapp.presentation.hud
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,9 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestCornerShapes
 import com.lrds.androidroadapp.designsystem.theme.DroidQuestTheme
@@ -66,6 +72,9 @@ fun TopHud(
     modifier: Modifier = Modifier,
 ) {
     val ext = DroidQuestTheme.colors
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -75,16 +84,15 @@ fun TopHud(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = spacing.screenHorizontal, vertical = spacing.base),
                 contentAlignment = Alignment.Center,
             ) {
-                val isWide = maxWidth >= 820.dp
+                val isWide = maxWidth >= sizing.wideBreakpoint
 
                 Column(
-                    modifier = Modifier.widthIn(max = 1040.dp).fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.widthIn(max = sizing.maxContentWidth).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(spacing.lg),
                 ) {
-                    // Compact single-row header
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -92,32 +100,32 @@ fun TopHud(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.base),
                             modifier = Modifier
                                 .weight(1f, fill = false)
                                 .clip(DroidQuestCornerShapes.HudPill)
                                 .clickable(onClick = onGoHome)
-                                .padding(end = 6.dp),
+                                .padding(end = spacing.sm),
                         ) {
                             Surface(
                                 color = MaterialTheme.colorScheme.surfaceContainer,
                                 shape = DroidQuestCornerShapes.TactileButton,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                                modifier = Modifier.size(34.dp),
+                                border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
+                                modifier = Modifier.size(sizing.appBadgeSize),
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = DroidQuestIcons.Terminal,
                                         contentDescription = "DroidQuest",
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(17.dp),
+                                        modifier = Modifier.size(sizing.iconMd),
                                     )
                                 }
                             }
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.md),
                             ) {
                                 Text(
                                     text = "DroidQuest",
@@ -144,7 +152,7 @@ fun TopHud(
                         }
 
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             HudGhostIconButton(
@@ -168,11 +176,15 @@ fun TopHud(
                         }
                     }
 
-                    // Unified 3-pill monochrome telemetry strip (shown on Trail / Home)
-                    if (showTelemetryStrip) {
+                    val motion = DroidQuestTheme.motion
+                    AnimatedVisibility(
+                        visible = showTelemetryStrip,
+                        enter = fadeIn(tween(motion.fastMs)) + expandVertically(tween(motion.standardMs)),
+                        exit = fadeOut(tween(motion.fastMs)) + shrinkVertically(tween(motion.standardMs)),
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             TelemetryPill(
@@ -205,22 +217,26 @@ private fun TelemetryPill(
     label: String,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.HudPill,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = spacing.base, vertical = spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm, Alignment.CenterHorizontally),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(sizing.iconSm),
             )
             Text(
                 text = label,
@@ -239,6 +255,8 @@ private fun DesktopTabBar(
     dueReviewCount: Int,
     onSelectTab: (ActiveTab) -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
     val tabs = listOf(
         ActiveTab.TRAIL to "Trail",
         ActiveTab.CHECKLIST to "Checklist",
@@ -249,11 +267,11 @@ private fun DesktopTabBar(
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = DroidQuestCornerShapes.FullPill,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
-            modifier = Modifier.padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(spacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEach { (tab, label) ->
@@ -263,10 +281,10 @@ private fun DesktopTabBar(
                         .clip(DroidQuestCornerShapes.FullPill)
                         .background(
                             if (selected) MaterialTheme.colorScheme.surfaceContainerHighest
-                            else androidx.compose.ui.graphics.Color.Transparent
+                            else Color.Transparent
                         )
                         .clickable { onSelectTab(tab) }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = spacing.lg, vertical = spacing.sm),
                 ) {
                     Text(
                         text = label,
@@ -282,13 +300,14 @@ private fun DesktopTabBar(
 @Composable
 private fun HudGhostIconButton(
     icon: ImageVector,
-    tint: androidx.compose.ui.graphics.Color,
+    tint: Color,
     contentDescription: String,
     onClick: () -> Unit,
 ) {
+    val sizing = DroidQuestTheme.sizing
     Box(
         modifier = Modifier
-            .size(34.dp)
+            .size(sizing.ghostButtonSize)
             .clip(CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -297,7 +316,7 @@ private fun HudGhostIconButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = tint,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(sizing.iconLg),
         )
     }
 }

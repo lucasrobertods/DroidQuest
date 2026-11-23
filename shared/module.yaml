@@ -29,9 +29,6 @@ dependencies@nonWeb:
 dependencies@android:
   - $compose.uiTooling
 
-dependencies@jvm:
-  - $libs.kotlinx.coroutines.swing
-
 test-dependencies:
   - $libs.kotlinx.coroutines.test
   - $libs.turbine

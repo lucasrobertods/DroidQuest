@@ -37,10 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.dp
 import com.lrds.androidroadapp.designsystem.components.PrimaryActionButton
 import com.lrds.androidroadapp.designsystem.components.SecondaryTonalButton
 import com.lrds.androidroadapp.designsystem.icons.DroidQuestIcons
@@ -71,6 +69,9 @@ fun SettingsDialog(
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     @Suppress("DEPRECATION")
     val clipboard = LocalClipboardManager.current
 
@@ -85,26 +86,25 @@ fun SettingsDialog(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.scrim)
             .clickable(onClick = onClose)
-            .padding(16.dp)
+            .padding(spacing.screenHorizontal)
             .imePadding(),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.background,
             shape = DroidQuestCornerShapes.Dialog,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            shadowElevation = 24.dp,
+            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
+            shadowElevation = sizing.elevationModal,
             modifier = Modifier
-                .widthIn(max = 520.dp)
+                .widthIn(max = sizing.dialogMaxWidth)
                 .fillMaxWidth()
                 .clickable(enabled = false) {},
         ) {
             Column {
-                // Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = spacing.dialogPadding, vertical = spacing.cardPadding),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -114,11 +114,11 @@ fun SettingsDialog(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                         shape = CircleShape,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(sizing.ghostButtonSize)
                             .clip(CircleShape)
                             .clickable(onClick = onClose),
                     ) {
@@ -127,7 +127,7 @@ fun SettingsDialog(
                                 imageVector = DroidQuestIcons.Close,
                                 contentDescription = "Close settings",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(sizing.iconMd),
                             )
                         }
                     }
@@ -137,13 +137,13 @@ fun SettingsDialog(
 
                 Column(
                     modifier = Modifier
-                        .heightIn(max = 600.dp)
+                        .heightIn(max = sizing.dialogMaxHeight)
                         .verticalScroll(rememberScrollState())
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                        .padding(spacing.dialogPadding),
+                    verticalArrangement = Arrangement.spacedBy(spacing.section),
                 ) {
-                    // 0. Appearance (System / Light / Dark)
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Appearance (System / Light / Dark)
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                         Text(
                             text = "APPEARANCE",
                             style = MaterialTheme.typography.labelSmall,
@@ -151,7 +151,7 @@ fun SettingsDialog(
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
                         ) {
                             listOf(
                                 ThemeMode.SYSTEM to "System",
@@ -163,7 +163,7 @@ fun SettingsDialog(
                                     color = if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
                                     shape = DroidQuestCornerShapes.TactileButton,
                                     border = BorderStroke(
-                                        1.dp,
+                                        borders.hairline,
                                         if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
                                         else MaterialTheme.colorScheme.outlineVariant,
                                     ),
@@ -173,7 +173,7 @@ fun SettingsDialog(
                                         .clickable { onSetThemeMode(mode) },
                                 ) {
                                     Box(
-                                        modifier = Modifier.padding(vertical = 10.dp),
+                                        modifier = Modifier.padding(vertical = spacing.base),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
@@ -187,8 +187,8 @@ fun SettingsDialog(
                         }
                     }
 
-                    // 1. 100-Day Start Date
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // 100-Day Start Date
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                         Text(
                             text = "100-DAY SPRINT START DATE",
                             style = MaterialTheme.typography.labelSmall,
@@ -196,7 +196,7 @@ fun SettingsDialog(
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             OutlinedTextField(
@@ -210,32 +210,32 @@ fun SettingsDialog(
                             )
                             PrimaryActionButton(
                                 onClick = { onUpdateStartDate(startDateInput) },
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                                contentPadding = PaddingValues(horizontal = spacing.cardPadding, vertical = spacing.cardPaddingCompact),
                             ) {
                                 Text("Apply", style = MaterialTheme.typography.labelLarge)
                             }
                         }
                     }
 
-                    // 2. Local Persistence Info Card
+                    // Local Persistence Info Card
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceContainer,
                         shape = DroidQuestCornerShapes.QuestCard,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(spacing.cardPaddingCompact),
+                            verticalArrangement = Arrangement.spacedBy(spacing.xs),
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.md),
                             ) {
                                 Icon(
                                     imageVector = DroidQuestIcons.HardDrive,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(15.dp),
+                                    modifier = Modifier.size(sizing.iconMd),
                                 )
                                 Text(
                                     text = "$storageLabel · ${saveStatus.name.lowercase().replace('_', ' ')}",
@@ -251,16 +251,16 @@ fun SettingsDialog(
                         }
                     }
 
-                    // 3. Optional Daily Review Reminders
+                    // Daily Review Reminders
                     if (supportsDailyReminders) {
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = DroidQuestCornerShapes.QuestCard,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outlineVariant),
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(spacing.cardPaddingCompact),
+                                verticalArrangement = Arrangement.spacedBy(spacing.base),
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -293,7 +293,7 @@ fun SettingsDialog(
                                 }
 
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(spacing.md),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     listOf(9, 13, 19, 21).forEach { hour ->
@@ -302,7 +302,7 @@ fun SettingsDialog(
                                             color = if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLowest,
                                             shape = DroidQuestCornerShapes.MicroBadge,
                                             border = BorderStroke(
-                                                1.dp,
+                                                borders.hairline,
                                                 if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outlineVariant,
                                             ),
                                             modifier = Modifier
@@ -313,7 +313,7 @@ fun SettingsDialog(
                                                 text = "${hour.toString().padStart(2, '0')}:00",
                                                 style = DroidQuestTheme.mono.micro,
                                                 color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                                                modifier = Modifier.padding(horizontal = spacing.base, vertical = spacing.sm),
                                             )
                                         }
                                     }
@@ -322,8 +322,8 @@ fun SettingsDialog(
                         }
                     }
 
-                    // 4. JSON Export / Import
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // JSON Export / Import
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.base)) {
                         Text(
                             text = "BACKUP & RESTORE",
                             style = MaterialTheme.typography.labelSmall,
@@ -331,13 +331,13 @@ fun SettingsDialog(
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.base),
                         ) {
                             SecondaryTonalButton(
                                 onClick = onExportJson,
                                 modifier = Modifier.weight(1f),
                             ) {
-                                Icon(DroidQuestIcons.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Icon(DroidQuestIcons.Download, contentDescription = null, modifier = Modifier.size(sizing.iconMd))
                                 Text("Export JSON", style = MaterialTheme.typography.labelLarge)
                             }
 
@@ -351,14 +351,14 @@ fun SettingsDialog(
                                 },
                                 modifier = Modifier.weight(1f),
                             ) {
-                                Icon(DroidQuestIcons.Upload, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Icon(DroidQuestIcons.Upload, contentDescription = null, modifier = Modifier.size(sizing.iconMd))
                                 Text("Import JSON", style = MaterialTheme.typography.labelLarge)
                             }
                         }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.lg),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
@@ -380,18 +380,20 @@ fun SettingsDialog(
                         }
 
                         AnimatedVisibility(visible = showPasteImport) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                                 OutlinedTextField(
                                     value = pastedJson,
                                     onValueChange = { pastedJson = it },
                                     placeholder = { Text("Paste contents of progress.json...") },
                                     colors = questTextFieldColors(),
                                     shape = DroidQuestCornerShapes.QuestCard,
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 160.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = sizing.pasteBoxMinHeight, max = sizing.pasteBoxMaxHeight),
                                 )
                                 PrimaryActionButton(
                                     onClick = { onImportJsonRaw(pastedJson) },
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                                    contentPadding = PaddingValues(horizontal = spacing.cardPaddingCompact, vertical = spacing.base),
                                 ) {
                                     Text("Restore JSON", style = MaterialTheme.typography.labelLarge)
                                 }
@@ -401,21 +403,21 @@ fun SettingsDialog(
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                    // 5. Danger Zone: 2-Step Reset
+                    // Danger Zone: 2-Step Reset
                     if (!confirmReset) {
                         Row(
                             modifier = Modifier
                                 .clip(DroidQuestCornerShapes.TactileButton)
                                 .clickable { confirmReset = true }
-                                .padding(vertical = 4.dp),
+                                .padding(vertical = spacing.xs),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
                         ) {
                             Icon(
                                 imageVector = DroidQuestIcons.RotateCcw,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(15.dp),
+                                modifier = Modifier.size(sizing.iconMd),
                             )
                             Text(
                                 text = "Reset all roadmap progress",
@@ -427,10 +429,10 @@ fun SettingsDialog(
                         Surface(
                             color = MaterialTheme.colorScheme.errorContainer,
                             shape = DroidQuestCornerShapes.QuestCard,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                modifier = Modifier.fillMaxWidth().padding(spacing.lg),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -440,7 +442,7 @@ fun SettingsDialog(
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.weight(1f),
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
                                     Surface(
                                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                                         shape = DroidQuestCornerShapes.TactileButton,
@@ -452,7 +454,7 @@ fun SettingsDialog(
                                             text = "Cancel",
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                            modifier = Modifier.padding(horizontal = spacing.base, vertical = spacing.sm),
                                         )
                                     }
                                     Surface(
@@ -468,8 +470,8 @@ fun SettingsDialog(
                                         Text(
                                             text = "Reset",
                                             style = MaterialTheme.typography.labelMedium,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                            color = MaterialTheme.colorScheme.onError,
+                                            modifier = Modifier.padding(horizontal = spacing.base, vertical = spacing.sm),
                                         )
                                     }
                                 }
@@ -477,7 +479,7 @@ fun SettingsDialog(
                         }
                     }
 
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(spacing.xxs))
                 }
             }
         }

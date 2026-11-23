@@ -7,8 +7,10 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
@@ -87,13 +89,14 @@ fun CalmProgressBar(
     modifier: Modifier = Modifier,
     fillColor: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = MaterialTheme.colorScheme.surfaceContainerLowest,
-    height: Dp = 6.dp,
+    height: Dp = DroidQuestTheme.sizing.progressBarStandard,
     minVisibleFraction: Float = 0.03f,
 ) {
+    val motion = DroidQuestTheme.motion
     val clamped = progress.coerceIn(0f, 1f)
     val animated by animateFloatAsState(
         targetValue = if (clamped > 0f) maxOf(clamped, minVisibleFraction) else 0f,
-        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = motion.progressMs, easing = FastOutSlowInEasing),
     )
 
     Box(
@@ -124,9 +127,13 @@ fun PrimaryActionButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     shape: Shape = DroidQuestCornerShapes.TactileButton,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+    contentPadding: PaddingValues = PaddingValues(
+        horizontal = DroidQuestTheme.spacing.cardPadding,
+        vertical = DroidQuestTheme.spacing.lg,
+    ),
     content: @Composable RowScope.() -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
     Surface(
         color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -138,14 +145,14 @@ fun PrimaryActionButton(
         Row(
             modifier = Modifier.padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(spacing.md, Alignment.CenterHorizontally),
             content = content,
         )
     }
 }
 
 /**
- * Calm dark neutral tonal button with subtle 1dp hairline border.
+ * Calm neutral tonal button with subtle hairline border.
  */
 @Composable
 fun SecondaryTonalButton(
@@ -156,14 +163,19 @@ fun SecondaryTonalButton(
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     borderColor: Color = MaterialTheme.colorScheme.outlineVariant,
     shape: Shape = DroidQuestCornerShapes.TactileButton,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
+    contentPadding: PaddingValues = PaddingValues(
+        horizontal = DroidQuestTheme.spacing.cardPaddingCompact,
+        vertical = DroidQuestTheme.spacing.base,
+    ),
     content: @Composable RowScope.() -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
     Surface(
         color = if (enabled) containerColor else containerColor.copy(alpha = 0.5f),
         contentColor = contentColor,
         shape = shape,
-        border = BorderStroke(1.dp, borderColor),
+        border = BorderStroke(borders.hairline, borderColor),
         modifier = modifier
             .clip(shape)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
@@ -171,23 +183,44 @@ fun SecondaryTonalButton(
         Row(
             modifier = Modifier.padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm, Alignment.CenterHorizontally),
             content = content,
         )
     }
 }
 
 /**
- * Floating Pill Bottom Navigation Bar (approved Stitch mobile spec).
+ * Revolut-style Floating Pill Bottom Navigation Bar.
+ * Remains pinned and reachable on scroll while compacting smoothly to icon-only on scroll-down
+ * and restoring text labels on scroll-up.
  */
 @Composable
 fun FloatingBottomNavBar(
     activeTab: ActiveTab,
     dueReviewCount: Int,
+    compact: Boolean,
     onTabChange: (ActiveTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ext = DroidQuestTheme.colors
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+    val motion = DroidQuestTheme.motion
+
+    val outerHorizontalPadding by animateDpAsState(
+        targetValue = if (compact) spacing.navContentBottomPaddingWide else spacing.section,
+        animationSpec = tween(durationMillis = motion.standardMs, easing = FastOutSlowInEasing),
+    )
+    val pillVerticalPadding by animateDpAsState(
+        targetValue = if (compact) spacing.sm else spacing.md,
+        animationSpec = tween(durationMillis = motion.standardMs, easing = FastOutSlowInEasing),
+    )
+    val itemVerticalPadding by animateDpAsState(
+        targetValue = if (compact) spacing.xs else spacing.sm,
+        animationSpec = tween(durationMillis = motion.standardMs, easing = FastOutSlowInEasing),
+    )
+
     val destinations = listOf(
         Triple(ActiveTab.TRAIL, "Trail", DroidQuestIcons.Map),
         Triple(ActiveTab.CHECKLIST, "Checklist", DroidQuestIcons.ListChecks),
@@ -199,22 +232,22 @@ fun FloatingBottomNavBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = outerHorizontalPadding, vertical = spacing.lg),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
             color = ext.navPillSurface.copy(alpha = 0.96f),
             shape = DroidQuestCornerShapes.FullPill,
-            border = BorderStroke(1.dp, ext.navPillBorder),
-            shadowElevation = 14.dp,
+            border = BorderStroke(borders.hairline, ext.navPillBorder),
+            shadowElevation = sizing.elevationNavPill,
             modifier = Modifier
-                .widthIn(max = 460.dp)
+                .widthIn(max = sizing.navPillMaxWidth)
                 .fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 7.dp),
+                    .padding(horizontal = spacing.md, vertical = pillVerticalPadding),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -227,41 +260,47 @@ fun FloatingBottomNavBar(
                             .weight(1f)
                             .clip(DroidQuestCornerShapes.FullPill)
                             .clickable(role = Role.Tab) { onTabChange(tab) }
-                            .padding(vertical = 5.dp),
+                            .padding(vertical = itemVerticalPadding),
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
                         ) {
                             Box(contentAlignment = Alignment.TopEnd) {
                                 Icon(
                                     imageVector = icon,
                                     contentDescription = label,
                                     tint = tint,
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(sizing.iconXl),
                                 )
                                 if (tab == ActiveTab.REVIEWS && dueReviewCount > 0) {
                                     Surface(
                                         color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                         shape = CircleShape,
-                                        modifier = Modifier.offset(x = 8.dp, y = (-5).dp),
+                                        modifier = Modifier.offset(x = spacing.md, y = -spacing.xs),
                                     ) {
                                         Text(
                                             text = if (dueReviewCount > 99) "99+" else dueReviewCount.toString(),
                                             style = DroidQuestTheme.mono.micro,
                                             color = MaterialTheme.colorScheme.background,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                            modifier = Modifier.padding(horizontal = spacing.xs, vertical = borders.hairline),
                                         )
                                     }
                                 }
                             }
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = tint,
-                                maxLines = 1,
-                            )
+                            AnimatedVisibility(
+                                visible = !compact,
+                                enter = fadeIn(tween(motion.fastMs)) + expandVertically(tween(motion.fastMs)),
+                                exit = fadeOut(tween(motion.fastMs)) + shrinkVertically(tween(motion.fastMs)),
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = tint,
+                                    maxLines = 1,
+                                )
+                            }
                         }
                     }
                 }
@@ -271,7 +310,7 @@ fun FloatingBottomNavBar(
 }
 
 /**
- * Refined clean button retaining signature compatibility for existing callers.
+ * Refined clean button retaining signature compatibility.
  */
 @Composable
 fun Tactile3DButton(
@@ -283,22 +322,28 @@ fun Tactile3DButton(
     borderColor: Color = Color.Transparent,
     shape: Shape = DroidQuestCornerShapes.TactileButton,
     ledgeHeight: Dp = 0.dp,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+    contentPadding: PaddingValues = PaddingValues(
+        horizontal = DroidQuestTheme.spacing.cardPadding,
+        vertical = DroidQuestTheme.spacing.base,
+    ),
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val borders = DroidQuestTheme.borders
+    val motion = DroidQuestTheme.motion
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val pressOffset by animateDpAsState(
-        targetValue = if (pressed && enabled && ledgeHeight > 0.dp) 1.dp else 0.dp,
-        animationSpec = tween(durationMillis = 80),
+        targetValue = if (pressed && enabled && ledgeHeight > 0.dp) borders.hairline else 0.dp,
+        animationSpec = tween(durationMillis = motion.pressMs),
     )
 
     Surface(
         color = if (enabled) containerColor else containerColor.copy(alpha = 0.5f),
         contentColor = contentColor,
         shape = shape,
-        border = if (borderColor != Color.Transparent) BorderStroke(1.dp, borderColor) else null,
+        border = if (borderColor != Color.Transparent) BorderStroke(borders.hairline, borderColor) else null,
         modifier = modifier
             .offset(y = pressOffset)
             .clip(shape)
@@ -313,7 +358,7 @@ fun Tactile3DButton(
         Row(
             modifier = Modifier.padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(spacing.md, Alignment.CenterHorizontally),
             content = content,
         )
     }
@@ -326,13 +371,14 @@ fun GradientProgressBar(
     modifier: Modifier = Modifier,
     trackColor: Color = MaterialTheme.colorScheme.surfaceContainerLowest,
     borderColor: Color = Color.Transparent,
-    height: Dp = 6.dp,
+    height: Dp = DroidQuestTheme.sizing.progressBarStandard,
     minVisibleFraction: Float = 0.03f,
 ) {
+    val motion = DroidQuestTheme.motion
     val clamped = progress.coerceIn(0f, 1f)
     val animated by animateFloatAsState(
         targetValue = if (clamped > 0f) maxOf(clamped, minVisibleFraction) else 0f,
-        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = motion.progressMs, easing = FastOutSlowInEasing),
     )
 
     Box(
@@ -367,23 +413,26 @@ fun MicroPill(
     icon: ImageVector? = null,
     shape: Shape = DroidQuestCornerShapes.MicroBadge,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
     Surface(
         color = containerColor,
         contentColor = contentColor,
         shape = shape,
-        border = if (borderColor != Color.Transparent) BorderStroke(1.dp, borderColor) else null,
+        border = if (borderColor != Color.Transparent) BorderStroke(borders.hairline, borderColor) else null,
         modifier = modifier,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
         ) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(12.dp),
+                    modifier = Modifier.size(sizing.iconXs),
                 )
             }
             Text(
@@ -410,14 +459,17 @@ fun CelebrationConfettiOverlay(
     modifier: Modifier = Modifier,
 ) {
     if (triggerId == 0L) return
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val motion = DroidQuestTheme.motion
     val progress = remember(triggerId) { Animatable(0f) }
-    val particles = remember(triggerId) {
+    val particles = remember(triggerId, primary, onSurface) {
         val rng = Random(triggerId)
         val palette = listOf(
-            Color(0xFF22C55E),
-            Color(0xFF4ADE80),
-            Color(0xFF86EFAC),
-            Color(0xFFF4F6FA),
+            primary,
+            primary.copy(alpha = 0.8f),
+            primary.copy(alpha = 0.55f),
+            onSurface.copy(alpha = 0.75f),
         )
         List(if (isBoss) 56 else 32) {
             ConfettiParticle(
@@ -432,7 +484,7 @@ fun CelebrationConfettiOverlay(
 
     LaunchedEffect(triggerId) {
         progress.snapTo(0f)
-        progress.animateTo(1f, tween(durationMillis = 1150, easing = LinearEasing))
+        progress.animateTo(1f, tween(durationMillis = motion.celebrationMs, easing = LinearEasing))
     }
 
     val t = progress.value
@@ -459,6 +511,10 @@ fun FloatingCelebrationToast(
     tone: ToastTone,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = DroidQuestTheme.spacing
+    val sizing = DroidQuestTheme.sizing
+    val borders = DroidQuestTheme.borders
+    val motion = DroidQuestTheme.motion
     val accentColor = when (tone) {
         ToastTone.ROSE -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.primary
@@ -466,27 +522,27 @@ fun FloatingCelebrationToast(
 
     AnimatedVisibility(
         visible = !message.isNullOrBlank(),
-        enter = fadeIn(tween(180)) + slideInVertically { it / 2 },
-        exit = fadeOut(tween(220)) + slideOutVertically { it / 2 },
+        enter = fadeIn(tween(motion.fastMs)) + slideInVertically(tween(motion.fastMs)) { it / 2 },
+        exit = fadeOut(tween(motion.fastMs)) + slideOutVertically(tween(motion.fastMs)) { it / 2 },
         modifier = modifier,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
             contentColor = MaterialTheme.colorScheme.onSurface,
             shape = DroidQuestCornerShapes.QuestCard,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            shadowElevation = 12.dp,
+            border = BorderStroke(borders.hairline, MaterialTheme.colorScheme.outline),
+            shadowElevation = sizing.elevationToast,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                modifier = Modifier.padding(horizontal = spacing.cardPaddingCompact, vertical = spacing.lg),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.base),
             ) {
                 Icon(
                     imageVector = DroidQuestIcons.CheckCircle2,
                     contentDescription = null,
                     tint = accentColor,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(sizing.iconMd),
                 )
                 Text(
                     text = message.orEmpty(),
