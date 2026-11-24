@@ -5,9 +5,11 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import com.lrds.androidroadapp.data.db.DROIDQUEST_MIGRATION_1_2
 import com.lrds.androidroadapp.data.db.DROIDQUEST_MIGRATION_2_3
+import com.lrds.androidroadapp.data.db.DROIDQUEST_MIGRATION_3_4
 import com.lrds.androidroadapp.data.db.DroidQuestDatabase
 import com.lrds.androidroadapp.data.db.RoomProgressStorage
 import com.lrds.androidroadapp.domain.curriculum.RoadmapCatalog
+import com.lrds.androidroadapp.domain.model.AppLanguage
 import com.lrds.androidroadapp.domain.model.CustomLink
 import com.lrds.androidroadapp.domain.model.ResourceType
 import com.lrds.androidroadapp.domain.model.StudySchedule
@@ -37,6 +39,7 @@ class RoomProgressStorageTest {
             val now = Instant.parse("2026-11-22T12:00:00Z")
             val initial = RoadmapCatalog.createInitialProgressState(now, TimeZone.UTC).copy(
                 themeMode = ThemeMode.LIGHT,
+                appLanguage = AppLanguage.PT_BR,
                 dailyReminderEnabled = true,
                 reminderHour = 19,
                 studyReminderEnabled = true,
@@ -77,7 +80,7 @@ class RoomProgressStorageTest {
 
                 val db = Room.databaseBuilder<DroidQuestDatabase>(name = dbFile.absolutePath)
                     .setDriver(BundledSQLiteDriver())
-                    .addMigrations(DROIDQUEST_MIGRATION_1_2, DROIDQUEST_MIGRATION_2_3)
+                    .addMigrations(DROIDQUEST_MIGRATION_1_2, DROIDQUEST_MIGRATION_2_3, DROIDQUEST_MIGRATION_3_4)
                     .build()
 
                 try {

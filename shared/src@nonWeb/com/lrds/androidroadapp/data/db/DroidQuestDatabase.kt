@@ -33,6 +33,14 @@ val DROIDQUEST_MIGRATION_2_3: Migration = object : Migration(2, 3) {
     }
 }
 
+val DROIDQUEST_MIGRATION_3_4: Migration = object : Migration(3, 4) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "ALTER TABLE mission_config ADD COLUMN appLanguage TEXT NOT NULL DEFAULT 'SYSTEM'"
+        )
+    }
+}
+
 @Database(
     entities = [
         MissionConfigEntity::class,
@@ -41,7 +49,7 @@ val DROIDQUEST_MIGRATION_2_3: Migration = object : Migration(2, 3) {
         CustomLinkEntity::class,
         StudyLogEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 @ConstructedBy(DroidQuestDatabaseConstructor::class)

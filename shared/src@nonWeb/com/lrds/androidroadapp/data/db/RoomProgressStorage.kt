@@ -1,6 +1,7 @@
 package com.lrds.androidroadapp.data.db
 
 import com.lrds.androidroadapp.data.ProgressStorage
+import com.lrds.androidroadapp.domain.model.AppLanguage
 import com.lrds.androidroadapp.domain.model.CustomLink
 import com.lrds.androidroadapp.domain.model.ResourceType
 import com.lrds.androidroadapp.domain.model.SaveStatus
@@ -65,6 +66,7 @@ class RoomProgressStorage(
             targetDays = config.targetDays,
             soundEnabled = config.soundEnabled,
             themeMode = runCatching { ThemeMode.valueOf(config.themeMode) }.getOrDefault(ThemeMode.SYSTEM),
+            appLanguage = runCatching { AppLanguage.valueOf(config.appLanguage) }.getOrDefault(AppLanguage.SYSTEM),
             dailyReminderEnabled = config.dailyReminderEnabled,
             reminderHour = StudySchedule.clampHour(config.reminderHour),
             studyReminderEnabled = config.studyReminderEnabled && studyDays.isNotEmpty(),
@@ -88,6 +90,7 @@ class RoomProgressStorage(
             targetDays = state.targetDays,
             soundEnabled = state.soundEnabled,
             themeMode = state.themeMode.name,
+            appLanguage = state.appLanguage.name,
             dailyReminderEnabled = state.dailyReminderEnabled,
             reminderHour = StudySchedule.clampHour(state.reminderHour),
             studyReminderEnabled = state.studyReminderEnabled && normalizedStudyDays.isNotEmpty(),

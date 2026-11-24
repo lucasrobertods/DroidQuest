@@ -2,6 +2,7 @@ package com.lrds.androidroadapp.data
 
 import com.lrds.androidroadapp.domain.curriculum.RoadmapCatalog
 import com.lrds.androidroadapp.domain.engine.SpacedRepetitionEngine
+import com.lrds.androidroadapp.domain.model.AppLanguage
 import com.lrds.androidroadapp.domain.model.CustomLink
 import com.lrds.androidroadapp.domain.model.ResourceType
 import com.lrds.androidroadapp.domain.model.ReviewRating
@@ -343,6 +344,18 @@ class ProgressRepository(
         _state.update { prev ->
             prev.copy(
                 themeMode = mode,
+                lastUpdated = now.toString(),
+            )
+        }
+        scheduleSave()
+        return MutationOutcome(hapticKind = HapticKind.LIGHT)
+    }
+
+    fun setAppLanguage(language: AppLanguage): MutationOutcome {
+        val now = clock.now()
+        _state.update { prev ->
+            prev.copy(
+                appLanguage = language,
                 lastUpdated = now.toString(),
             )
         }
